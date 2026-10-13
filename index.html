@@ -30,7 +30,7 @@ input,select,textarea{width:100%;padding:11px;border:1px solid var(--bd);border-
 </style></head><body><main>
 <h1>🚕 Gestão Da Direção</h1>
 <div class="tabs" id="tabs"></div>
-<div id="v"></div>
+<div id="view"></div>
 </main>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -115,9 +115,9 @@ function hist(){const c=consumo().m,L=[...D].sort((a,b)=>b.d.localeCompare(a.d)|
  <button class="go" style="background:var(--card);color:var(--bad);border:1px solid var(--bd)" onclick="auth.signOut()">Sair da conta</button>`}
 function del(id){if(armed==id){D=D.filter(e=>String(e.id)!==id);col.doc(id).delete();armed=null}else armed=id;draw()}
 function draw(){
- if(!ready){document.getElementById('v').innerHTML='<p class="hint">Carregando…</p>';return}
- if(!user){document.getElementById('tabs').innerHTML='';document.getElementById('v').innerHTML=login();return}
+ if(!ready){document.getElementById('view').innerHTML='<p class="hint">Carregando…</p>';return}
+ if(!user){document.getElementById('tabs').innerHTML='';document.getElementById('view').innerHTML=login();return}
  document.getElementById('tabs').innerHTML=[['res','Resumo'],['add','Lançar'],['his','Histórico']].map(([k,t])=>`<button class="${tab===k?'on':''}" onclick="tab='${k}';armed=null;draw()">${t}</button>`).join('');
- document.getElementById('v').innerHTML=(err?`<div class="card neg">⚠ ${esc(err)}</div>`:'')+(tab==='res'?resumo():tab==='add'?lancar():hist())}
+ document.getElementById('view').innerHTML=(err?`<div class="card neg">⚠ ${esc(err)}</div>`:'')+(tab==='res'?resumo():tab==='add'?lancar():hist())}
 draw();
 </script></body></html>
