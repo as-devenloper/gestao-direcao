@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Gestão Da Direção</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#f4f5f7;--card:#fff;--tx:#1b1f24;--mut:#6b7280;--ac:#0b7a4b;--bad:#c0392b;--bd:#e2e5e9;color-scheme:light}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#101317;--card:#1a1f25;--tx:#eceff3;--mut:#9aa3ae;--ac:#3ddc97;--bad:#ff7b6b;--bd:#2a313a;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#101317;--card:#1a1f25;--tx:#eceff3;--mut:#9aa3ae;--ac:#3ddc97;--bad:#ff7b6b;--bd:#2a313a;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:640px;margin:0 auto;padding:12px 12px 80px}
+h1{font-size:20px;margin:6px 0 10px}
+.tabs,.seg{display:flex;gap:6px;margin:8px 0}
+.tabs button,.seg button{flex:1;padding:10px 4px;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:10px;font:inherit;font-size:14px}
+.tabs button.on,.seg button.on{background:var(--ac);color:#fff;border-color:var(--ac);font-weight:600}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px;margin:10px 0}
+.big{font-size:32px;font-weight:700}
+.pos{color:var(--ac)}.neg{color:var(--bad)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.k{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:10px}
+.k small{display:block;color:var(--mut);font-size:12px}.k b{font-size:17px}
+label{display:block;font-size:13px;color:var(--mut);margin:10px 0 3px}
+input,select,textarea{width:100%;padding:11px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);font:inherit}
+.go{width:100%;margin-top:14px;padding:13px;border:0;border-radius:12px;background:var(--ac);color:#fff;font:inherit;font-weight:700}
+.row{display:flex;justify-content:space-between;gap:8px;padding:9px 0;border-bottom:1px solid var(--bd);font-size:14px}
+.row:last-child{border:0}.row small{color:var(--mut);display:block}
+.del{border:0;background:none;color:var(--bad);font-size:13px}
+.hint{color:var(--mut);font-size:13px}
+</style></head><body><main>
+<h1>🚕 Gestão Da Direção</h1>
+<div class="tabs" id="tabs"></div>
+<div id="v"></div>
+</main>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+// >>> COLE AQUI a config do seu projeto Firebase (Configurações do projeto > Seus apps > Web)
+const FB={apiKey:"COLE_AQUI",authDomain:"SEU_PROJETO.firebaseapp.com",projectId:"SEU_PROJETO",appId:"COLE_AQUI"};
+firebase.initializeApp(FB);
+const auth=firebase.auth(),db=firebase.firestore();
+db.enablePersistence({synchronizeTabs:true}).catch(()=>{});
+let D=[],user=null,col=null,unsub=null,ready=false,tab='res',per='mes',add='g',armed=null,msg='',lmsg='';
+auth.onAuthStateChanged(u=>{ready=true;user=u;if(unsub){unsub();unsub=null}D=[];
+ if(u){col=db.collection('users').doc(u.uid).collection('lancamentos');
+  unsub=col.onSnapshot(s=>{D=s.docs.map(x=>({...x.data(),id:x.id}));draw()},e=>{msg='Erro de sincronização: '+e.message;draw()})}
+ draw()});
+function login(){return `<div class="card"><b>Entrar</b><label>E-mail</label><input id="em" type="email" autocomplete="email"><label>Senha</label><input id="pw" type="password" autocomplete="current-password">
+ <button class="go" onclick="ent(0)">Entrar</button><button class="go" style="background:var(--card);color:var(--tx);border:1px solid var(--bd)" onclick="ent(1)">Criar conta</button><p class="hint">${esc(lmsg)}</p></div>`}
+function ent(n){const e=document.getElementById('em').value.trim(),p=document.getElementById('pw').value;lmsg='';
+ (n?auth.createUserWithEmailAndPassword(e,p):auth.signInWithEmailAndPassword(e,p)).catch(x=>{lmsg=x.message;draw()})}
+const R=v=>(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const N=(v,d=1)=>(v||0).toLocaleString('pt-BR',{maximumFractionDigits:d});
+const iso=d=>new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);
+const today=()=>iso(new Date());
+const fd=s=>s.split('-').reverse().slice(0,2).join('/');
+const esc=s=>String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const sum=(a,f)=>a.reduce((s,e)=>s+f(e),0);
+const num=id=>parseFloat(String(document.getElementById(id).value).replace(',','.'))||0;
+function start(){const n=new Date(),t=today();if(per==='dia')return t;if(per==='sem'){n.setDate(n.getDate()-((n.getDay()+6)%7));return iso(n)}if(per==='mes')return t.slice(0,7)+'-01';return '0000'}
+// consumo km/L: método tanque cheio (km desde o abastecimento anterior / litros deste)
+function consumo(){const f=D.filter(e=>e.t==='a'&&e.o>0).sort((a,b)=>a.o-b.o),m={};
+ for(let i=1;i<f.length;i++){const l=f[i].v/f[i].p;if(l>0)m[f[i].id]=(f[i].o-f[i-1].o)/l}
+ let km=0,L=0;for(let i=1;i<f.length;i++){km+=f[i].o-f[i-1].o;L+=f[i].v/f[i].p}
+ return{m,geral:L>0?km/L:0}}
+function stats(){const s=start(),P=D.filter(e=>e.d>=s),g=P.filter(e=>e.t==='g'),a=P.filter(e=>e.t==='a'),x=P.filter(e=>e.t==='d');
+ const ganho=sum(g,e=>e.v),comb=sum(a,e=>e.v),desp=sum(x,e=>e.v),lucro=ganho-comb-desp;
+ const km=sum(g,e=>e.k||0),dias=new Set(g.map(e=>e.d)).size,lit=sum(a,e=>e.v/e.p);
+ const src={};g.forEach(e=>src[e.s]=(src[e.s]||0)+e.v);
+ return{ganho,comb,desp,lucro,km,dias,lit,src,margem:ganho>0?lucro/ganho*100:0,pl:lit>0?comb/lit:0,c:consumo()}}
+function resumo(){const S=stats(),c=S.c.geral,cls=S.lucro>=0?'pos':'neg';
+ const seg=[['dia','Hoje'],['sem','Semana'],['mes','Mês'],['tudo','Tudo']].map(([k,t])=>`<button class="${per===k?'on':''}" onclick="per='${k}';draw()">${t}</button>`).join('');
+ const k=(t,v)=>`<div class="k"><small>${t}</small><b>${v}</b></div>`;
+ const srcs=Object.entries(S.src).map(([n,v])=>`<div class="row"><span>${esc(n)}</span><b>${R(v)}</b></div>`).join('')||'<p class="hint">Nenhum ganho lançado neste período.</p>';
+ return `<div class="seg">${seg}</div>
+ <div class="card"><small class="hint">Lucro líquido</small><div class="big ${cls}">${R(S.lucro)}</div>
+ <div class="hint">Margem: ${N(S.margem)}% do que você faturou</div></div>
+ <div class="grid">${k('Ganhos',R(S.ganho))}${k('Combustível',R(S.comb))}${k('Outras despesas',R(S.desp))}${k('Lucro por dia trabalhado',S.dias?R(S.lucro/S.dias):'—')}
+ ${k('Consumo médio',c?N(c)+' km/L':'—')}${k('Preço médio do litro',S.pl?R(S.pl):'—')}
+ ${k('Ganho por km',S.km?R(S.ganho/S.km):'—')}${k('Lucro por km',S.km?R(S.lucro/S.km):'—')}
+ ${k('Combustível por km',c&&S.pl?R(S.pl/c):'—')}${k('Km informados',S.km?N(S.km,0)+' km':'—')}</div>
+ <div class="card"><b>Ganhos por origem</b>${srcs}</div>
+ <p class="hint">O consumo usa o método tanque cheio: encha sempre até o topo e informe o km do painel. Ganho/lucro por km usam os km informados nos ganhos.</p>`}
+function lancar(){
+ const seg=[['g','💰 Ganho'],['a','⛽ Abastecer'],['d','🧾 Despesa']].map(([k,t])=>`<button class="${add===k?'on':''}" onclick="add='${k}';msg='';draw()">${t}</button>`).join('');
+ let f='';
+ if(add==='g')f=`<label>Origem</label><select id="s"><option>99</option><option>Viagem intermunicipal</option><option>Particular</option><option>Outro</option></select>
+  <label>Valor recebido (R$)</label><input id="v" type="number" inputmode="decimal" step="0.01">
+  <label>Km rodados (opcional)</label><input id="k" type="number" inputmode="decimal" step="0.1">`;
+ if(add==='a')f=`<label>Preço do litro (R$)</label><input id="p" type="number" inputmode="decimal" step="0.001">
+  <label>Valor abastecido (R$)</label><input id="v" type="number" inputmode="decimal" step="0.01">
+  <label>Km do painel (odômetro)</label><input id="o" type="number" inputmode="decimal" step="1">`;
+ if(add==='d')f=`<label>Categoria</label><select id="c"><option>Manutenção</option><option>Lavagem</option><option>Pedágio</option><option>Alimentação</option><option>Parcela/Aluguel</option><option>Seguro/IPVA</option><option>Outro</option></select>
+  <label>Valor (R$)</label><input id="v" type="number" inputmode="decimal" step="0.01">
+  <label>Observação</label><input id="n" type="text">`;
+ return `<div class="seg">${seg}</div><div class="card"><label>Data</label><input id="d" type="date" value="${today()}">${f}
+ <button class="go" onclick="addIt()">Salvar</button><p class="hint" id="msg">${msg}</p></div>`}
+function addIt(){const e={ts:Date.now(),t:add,d:document.getElementById('d').value||today(),v:num('v')};
+ if(e.v<=0){msg='Informe o valor.';return draw()}
+ if(add==='g'){e.s=document.getElementById('s').value;e.k=num('k')}
+ if(add==='a'){e.p=num('p');e.o=num('o');if(e.p<=0){msg='Informe o preço do litro.';return draw()}}
+ if(add==='d'){e.c=document.getElementById('c').value;e.n=document.getElementById('n').value}
+ const ref=col.doc();e.id=ref.id;D.push(e);ref.set(e).catch(x=>{msg='Erro ao salvar: '+x.message;draw()});msg='✔ Salvo!';
+ if(add==='a'){const l=e.v/e.p,k=consumo().m[e.id];msg+=` ${N(l,2)} L`+(k?` · ${N(k)} km/L neste tanque`:'')}
+ draw()}
+function hist(){const c=consumo().m,L=[...D].sort((a,b)=>b.d.localeCompare(a.d)||(b.ts||0)-(a.ts||0)).slice(0,100);
+ const rows=L.map(e=>{let t,s;
+  if(e.t==='g'){t=`💰 ${esc(e.s)}`;s=e.k?N(e.k)+' km':''}
+  if(e.t==='a'){t=`⛽ Abastecimento`;s=`${N(e.v/e.p,2)} L a ${R(e.p)}`+(c[e.id]?` · ${N(c[e.id])} km/L`:'')}
+  if(e.t==='d'){t=`🧾 ${esc(e.c)}`;s=esc(e.n)}
+  const sign=e.t==='g'?'+':'−';
+  return `<div class="row"><div>${t}<small>${fd(e.d)} ${s?'· '+s:''}</small></div><div style="text-align:right"><b class="${e.t==='g'?'pos':'neg'}">${sign}${R(e.v)}</b><br><button class="del" onclick="del('${e.id}')">${armed==e.id?'Confirmar?':'Excluir'}</button></div></div>`}).join('')||'<p class="hint">Sem lançamentos ainda.</p>';
+ return `<div class="card">${rows}</div>
+ <div class="card"><b>Backup</b><p class="hint">Seus dados já ficam salvos na nuvem. Use isto para migrar dados antigos: cole o backup da versão anterior e toque em Restaurar.</p>
+ <textarea id="bk" rows="3"></textarea><div class="seg"><button onclick="bk()">Gerar</button><button onclick="rs()">Restaurar</button></div></div>
+ <button class="go" style="background:var(--card);color:var(--bad);border:1px solid var(--bd)" onclick="auth.signOut()">Sair da conta</button>`}
+function del(id){if(armed==id){D=D.filter(e=>String(e.id)!==id);col.doc(id).delete();armed=null}else armed=id;draw()}
+function bk(){const t=document.getElementById('bk');t.value=JSON.stringify(D);t.select();try{document.execCommand('copy')}catch(e){}}
+async function rs(){const t=document.getElementById('bk');try{const a=JSON.parse(t.value);if(!Array.isArray(a))throw 0;
+ for(let i=0;i<a.length;i+=400){const b=db.batch();a.slice(i,i+400).forEach(e=>{const id=String(e.id).replace(/\//g,'_');b.set(col.doc(id),{...e,id,ts:e.ts||Math.floor(Number(e.id))||Date.now()})});await b.commit()}
+ t.value='✔ '+a.length+' lançamentos restaurados'}catch(e){t.value='Texto inválido'}}
+function draw(){
+ if(!ready){document.getElementById('v').innerHTML='<p class="hint">Carregando…</p>';return}
+ if(!user){document.getElementById('tabs').innerHTML='';document.getElementById('v').innerHTML=login();return}
+ document.getElementById('tabs').innerHTML=[['res','Resumo'],['add','Lançar'],['his','Histórico']].map(([k,t])=>`<button class="${tab===k?'on':''}" onclick="tab='${k}';armed=null;draw()">${t}</button>`).join('');
+ document.getElementById('v').innerHTML=tab==='res'?resumo():tab==='add'?lancar():hist()}
+draw();
+</script></body></html>
