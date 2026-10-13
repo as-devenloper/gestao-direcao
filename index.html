@@ -58,7 +58,12 @@ const fd=s=>s.split('-').reverse().slice(0,2).join('/');
 const esc=s=>String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const sum=(a,f)=>a.reduce((s,e)=>s+f(e),0);
 const mk=(el,d,sep)=>{let x=el.value.replace(/\D/g,'').replace(/^0+/,'');if(!x){el.value='';cl();return}x=x.padStart(d+1,'0');el.value=x.slice(0,-d)+sep+x.slice(-d);cl()};
-const cl=()=>{const l=document.getElementById('lt');if(!l)return;const p=num('p'),v=num('v');l.value=p>0&&v>0?(v/p).toFixed(2):''};
+const cl=()=>{const l=document.getElementById('lt');if(l){const p=num('p'),v=num('v');l.value=p>0&&v>0?(v/p).toFixed(2):''}if(document.getElementById('gc'))cg()};
+const br=x=>x.toFixed(2).replace('.',',');
+function cg(){const gc=document.getElementById('gc'),lc=document.getElementById('lc'),h=document.getElementById('gh');
+ const a=D.filter(e=>e.t==='a').sort((x,y)=>y.d.localeCompare(x.d)||(y.ts||0)-(x.ts||0))[0],p=a?a.p:0,v=num('v'),k=num('k'),kl=num('kl');
+ h.textContent=p?'Usando o preço do último abastecimento: '+R(p)+'/L':'Lance um abastecimento para calcular o gasto.';
+ if(p>0&&k>0&&kl>0){const c=k/kl*p;gc.value=br(c);lc.value=v>0?br(v-c):''}else{gc.value='';lc.value=''}}
 const num=id=>parseFloat(String(document.getElementById(id).value).replace(',','.'))||0;
 function start(){const n=new Date(),t=today();if(per==='dia')return t;if(per==='sem'){n.setDate(n.getDate()-((n.getDay()+6)%7));return iso(n)}if(per==='mes')return t.slice(0,7)+'-01';return '0000'}
 function stats(){const s=start(),P=D.filter(e=>e.d>=s),g=P.filter(e=>e.t==='g'),a=P.filter(e=>e.t==='a'),x=P.filter(e=>e.t==='d');
@@ -85,7 +90,10 @@ function lancar(){
  if(add==='g')f=`<label>Origem</label><select id="s"><option>99</option><option>Viagem intermunicipal</option><option>Particular</option><option>Outro</option></select>
   <label>Valor recebido (R$)</label><input id="v" type="text" inputmode="numeric" placeholder="0,00" oninput="mk(this,2,',')" autocomplete="off">
   <label>Km rodados (opcional)</label><input id="k" type="text" inputmode="numeric" placeholder="0000.0" oninput="mk(this,1,'.')" autocomplete="off">
-  <label>Consumo médio nesta corrida (km/L)</label><input id="kl" type="text" inputmode="numeric" placeholder="00.0" oninput="mk(this,1,'.')" autocomplete="off">`;
+  <label>Consumo médio nesta corrida (km/L)</label><input id="kl" type="text" inputmode="numeric" placeholder="00.0" oninput="mk(this,1,'.')" autocomplete="off">
+  <label>Gasto com combustível (calculado)</label><input id="gc" type="text" placeholder="0,00" readonly>
+  <label>Lucro nesta corrida (calculado)</label><input id="lc" type="text" placeholder="0,00" readonly>
+  <p class="hint" id="gh"></p>`;
  if(add==='a')f=`<label>Preço do litro (R$)</label><input id="p" type="text" inputmode="numeric" placeholder="0,00" oninput="mk(this,2,',')" autocomplete="off">
   <label>Valor abastecido (R$)</label><input id="v" type="text" inputmode="numeric" placeholder="0,00" oninput="mk(this,2,',')" autocomplete="off">
   <label>Litros abastecidos (calculado)</label><input id="lt" type="text" placeholder="00.00" readonly>`;
@@ -116,6 +124,6 @@ function draw(){
  if(!ready){document.getElementById('view').innerHTML='<p class="hint">Carregando…</p>';return}
  if(!user){document.getElementById('tabs').innerHTML='';document.getElementById('view').innerHTML=login();return}
  document.getElementById('tabs').innerHTML=[['res','Resumo'],['add','Lançar'],['his','Histórico']].map(([k,t])=>`<button class="${tab===k?'on':''}" onclick="tab='${k}';armed=null;draw()">${t}</button>`).join('');
- document.getElementById('view').innerHTML=(err?`<div class="card neg">⚠ ${esc(err)}</div>`:'')+(tab==='res'?resumo():tab==='add'?lancar():hist())}
+ document.getElementById('view').innerHTML=(err?`<div class="card neg">⚠ ${esc(err)}</div>`:'')+(tab==='res'?resumo():tab==='add'?lancar():hist());cl()}
 draw();
 </script></body></html>
