@@ -60,17 +60,12 @@ const sum=(a,f)=>a.reduce((s,e)=>s+f(e),0);
 const mk=(el,d,sep)=>{let x=el.value.replace(/\D/g,'').replace(/^0+/,'');if(!x){el.value='';return}x=x.padStart(d+1,'0');el.value=x.slice(0,-d)+sep+x.slice(-d)};
 const num=id=>parseFloat(String(document.getElementById(id).value).replace(',','.'))||0;
 function start(){const n=new Date(),t=today();if(per==='dia')return t;if(per==='sem'){n.setDate(n.getDate()-((n.getDay()+6)%7));return iso(n)}if(per==='mes')return t.slice(0,7)+'-01';return '0000'}
-// consumo km/L: método tanque cheio (km desde o abastecimento anterior / litros deste)
-function consumo(){const f=D.filter(e=>e.t==='a'&&e.o>0).sort((a,b)=>a.o-b.o),m={};
- for(let i=1;i<f.length;i++){const l=f[i].v/f[i].p;if(l>0)m[f[i].id]=(f[i].o-f[i-1].o)/l}
- let km=0,L=0;for(let i=1;i<f.length;i++){km+=f[i].o-f[i-1].o;L+=f[i].v/f[i].p}
- return{m,geral:L>0?km/L:0}}
 function stats(){const s=start(),P=D.filter(e=>e.d>=s),g=P.filter(e=>e.t==='g'),a=P.filter(e=>e.t==='a'),x=P.filter(e=>e.t==='d');
  const ganho=sum(g,e=>e.v),comb=sum(a,e=>e.v),desp=sum(x,e=>e.v),lucro=ganho-comb-desp;
  const km=sum(g,e=>e.k||0),dias=new Set(g.map(e=>e.d)).size,lit=sum(a,e=>e.v/e.p);
- const src={};g.forEach(e=>src[e.s]=(src[e.s]||0)+e.v);
- return{ganho,comb,desp,lucro,km,dias,lit,src,margem:ganho>0?lucro/ganho*100:0,pl:lit>0?comb/lit:0,c:consumo()}}
-function resumo(){const S=stats(),c=S.c.geral,cls=S.lucro>=0?'pos':'neg';
+ const gk=g.filter(e=>e.k>0&&e.kl>0),cons=gk.length?sum(gk,e=>e.k)/sum(gk,e=>e.k/e.kl):0;const src={};g.forEach(e=>src[e.s]=(src[e.s]||0)+e.v);
+ return{ganho,comb,desp,lucro,km,dias,lit,src,margem:ganho>0?lucro/ganho*100:0,pl:lit>0?comb/lit:0,c:cons}}
+function resumo(){const S=stats(),c=S.c,cls=S.lucro>=0?'pos':'neg';
  const seg=[['dia','Hoje'],['sem','Semana'],['mes','Mês'],['tudo','Tudo']].map(([k,t])=>`<button class="${per===k?'on':''}" onclick="per='${k}';draw()">${t}</button>`).join('');
  const k=(t,v)=>`<div class="k"><small>${t}</small><b>${v}</b></div>`;
  const srcs=Object.entries(S.src).map(([n,v])=>`<div class="row"><span>${esc(n)}</span><b>${R(v)}</b></div>`).join('')||'<p class="hint">Nenhum ganho lançado neste período.</p>';
@@ -82,16 +77,16 @@ function resumo(){const S=stats(),c=S.c.geral,cls=S.lucro>=0?'pos':'neg';
  ${k('Ganho por km',S.km?R(S.ganho/S.km):'—')}${k('Lucro por km',S.km?R(S.lucro/S.km):'—')}
  ${k('Combustível por km',c&&S.pl?R(S.pl/c):'—')}${k('Km informados',S.km?N(S.km,0)+' km':'—')}</div>
  <div class="card"><b>Ganhos por origem</b>${srcs}</div>
- <p class="hint">O consumo usa o método tanque cheio: encha sempre até o topo e informe o km do painel. Ganho/lucro por km usam os km informados nos ganhos.</p>`}
+ <p class="hint">Consumo médio, ganho e lucro por km usam os km e o km/L informados em cada ganho.</p>`}
 function lancar(){
  const seg=[['g','💰 Ganho'],['a','⛽ Abastecer'],['d','🧾 Despesa']].map(([k,t])=>`<button class="${add===k?'on':''}" onclick="add='${k}';msg='';draw()">${t}</button>`).join('');
  let f='';
  if(add==='g')f=`<label>Origem</label><select id="s"><option>99</option><option>Viagem intermunicipal</option><option>Particular</option><option>Outro</option></select>
   <label>Valor recebido (R$)</label><input id="v" type="text" inputmode="numeric" placeholder="0,00" oninput="mk(this,2,',')" autocomplete="off">
-  <label>Km rodados (opcional)</label><input id="k" type="text" inputmode="numeric" placeholder="0000.0" oninput="mk(this,1,'.')" autocomplete="off">`;
+  <label>Km rodados (opcional)</label><input id="k" type="text" inputmode="numeric" placeholder="0000.0" oninput="mk(this,1,'.')" autocomplete="off">
+  <label>Consumo médio nesta corrida (km/L)</label><input id="kl" type="text" inputmode="numeric" placeholder="00.0" oninput="mk(this,1,'.')" autocomplete="off">`;
  if(add==='a')f=`<label>Preço do litro (R$)</label><input id="p" type="text" inputmode="numeric" placeholder="0,00" oninput="mk(this,2,',')" autocomplete="off">
-  <label>Valor abastecido (R$)</label><input id="v" type="text" inputmode="numeric" placeholder="0,00" oninput="mk(this,2,',')" autocomplete="off">
-  <label>Km do painel (odômetro)</label><input id="o" type="text" inputmode="numeric" placeholder="0000.0" oninput="mk(this,1,'.')" autocomplete="off">`;
+  <label>Valor abastecido (R$)</label><input id="v" type="text" inputmode="numeric" placeholder="0,00" oninput="mk(this,2,',')" autocomplete="off">`;
  if(add==='d')f=`<label>Categoria</label><select id="c"><option>Manutenção</option><option>Lavagem</option><option>Pedágio</option><option>Alimentação</option><option>Parcela/Aluguel</option><option>Seguro/IPVA</option><option>Outro</option></select>
   <label>Valor (R$)</label><input id="v" type="text" inputmode="numeric" placeholder="0,00" oninput="mk(this,2,',')" autocomplete="off">
   <label>Observação</label><input id="n" type="text">`;
@@ -99,16 +94,16 @@ function lancar(){
  <button class="go" onclick="addIt()">Salvar</button><p class="hint" id="msg">${msg}</p></div>`}
 function addIt(){const e={ts:Date.now(),t:add,d:document.getElementById('d').value||today(),v:num('v')};
  if(e.v<=0){msg='Informe o valor.';return draw()}
- if(add==='g'){e.s=document.getElementById('s').value;e.k=num('k')}
- if(add==='a'){e.p=num('p');e.o=num('o');if(e.p<=0){msg='Informe o preço do litro.';return draw()}}
+ if(add==='g'){e.s=document.getElementById('s').value;e.k=num('k');e.kl=num('kl')}
+ if(add==='a'){e.p=num('p');if(e.p<=0){msg='Informe o preço do litro.';return draw()}}
  if(add==='d'){e.c=document.getElementById('c').value;e.n=document.getElementById('n').value}
  const ref=col.doc();e.id=ref.id;D.push(e);ref.set(e).catch(x=>{err=fe(x);draw()});msg='✔ Salvo!';
- if(add==='a'){const l=e.v/e.p,k=consumo().m[e.id];msg+=` ${N(l,2)} L`+(k?` · ${N(k)} km/L neste tanque`:'')}
+ if(add==='a'){msg+=` ${N(e.v/e.p,2)} L`}
  draw()}
-function hist(){const c=consumo().m,L=[...D].sort((a,b)=>b.d.localeCompare(a.d)||(b.ts||0)-(a.ts||0)).slice(0,100);
+function hist(){const L=[...D].sort((a,b)=>b.d.localeCompare(a.d)||(b.ts||0)-(a.ts||0)).slice(0,100);
  const rows=L.map(e=>{let t,s;
-  if(e.t==='g'){t=`💰 ${esc(e.s)}`;s=e.k?N(e.k)+' km':''}
-  if(e.t==='a'){t=`⛽ Abastecimento`;s=`${N(e.v/e.p,2)} L a ${R(e.p)}`+(c[e.id]?` · ${N(c[e.id])} km/L`:'')}
+  if(e.t==='g'){t=`💰 ${esc(e.s)}`;s=(e.k?N(e.k)+' km':'')+(e.kl?' · '+N(e.kl)+' km/L':'')}
+  if(e.t==='a'){t=`⛽ Abastecimento`;s=`${N(e.v/e.p,2)} L a ${R(e.p)}`}
   if(e.t==='d'){t=`🧾 ${esc(e.c)}`;s=esc(e.n)}
   const sign=e.t==='g'?'+':'−';
   return `<div class="row"><div>${t}<small>${fd(e.d)} ${s?'· '+s:''}</small></div><div style="text-align:right"><b class="${e.t==='g'?'pos':'neg'}">${sign}${R(e.v)}</b><br><button class="del" onclick="del('${e.id}')">${armed==e.id?'Confirmar?':'Excluir'}</button></div></div>`}).join('')||'<p class="hint">Sem lançamentos ainda.</p>';
