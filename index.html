@@ -57,7 +57,8 @@ const today=()=>iso(new Date());
 const fd=s=>s.split('-').reverse().slice(0,2).join('/');
 const esc=s=>String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const sum=(a,f)=>a.reduce((s,e)=>s+f(e),0);
-const mk=(el,d,sep)=>{let x=el.value.replace(/\D/g,'').replace(/^0+/,'');if(!x){el.value='';return}x=x.padStart(d+1,'0');el.value=x.slice(0,-d)+sep+x.slice(-d)};
+const mk=(el,d,sep)=>{let x=el.value.replace(/\D/g,'').replace(/^0+/,'');if(!x){el.value='';cl();return}x=x.padStart(d+1,'0');el.value=x.slice(0,-d)+sep+x.slice(-d);cl()};
+const cl=()=>{const l=document.getElementById('lt');if(!l)return;const p=num('p'),v=num('v');l.value=p>0&&v>0?(v/p).toFixed(2):''};
 const num=id=>parseFloat(String(document.getElementById(id).value).replace(',','.'))||0;
 function start(){const n=new Date(),t=today();if(per==='dia')return t;if(per==='sem'){n.setDate(n.getDate()-((n.getDay()+6)%7));return iso(n)}if(per==='mes')return t.slice(0,7)+'-01';return '0000'}
 function stats(){const s=start(),P=D.filter(e=>e.d>=s),g=P.filter(e=>e.t==='g'),a=P.filter(e=>e.t==='a'),x=P.filter(e=>e.t==='d');
@@ -86,7 +87,8 @@ function lancar(){
   <label>Km rodados (opcional)</label><input id="k" type="text" inputmode="numeric" placeholder="0000.0" oninput="mk(this,1,'.')" autocomplete="off">
   <label>Consumo médio nesta corrida (km/L)</label><input id="kl" type="text" inputmode="numeric" placeholder="00.0" oninput="mk(this,1,'.')" autocomplete="off">`;
  if(add==='a')f=`<label>Preço do litro (R$)</label><input id="p" type="text" inputmode="numeric" placeholder="0,00" oninput="mk(this,2,',')" autocomplete="off">
-  <label>Valor abastecido (R$)</label><input id="v" type="text" inputmode="numeric" placeholder="0,00" oninput="mk(this,2,',')" autocomplete="off">`;
+  <label>Valor abastecido (R$)</label><input id="v" type="text" inputmode="numeric" placeholder="0,00" oninput="mk(this,2,',')" autocomplete="off">
+  <label>Litros abastecidos (calculado)</label><input id="lt" type="text" placeholder="00.00" readonly>`;
  if(add==='d')f=`<label>Categoria</label><select id="c"><option>Manutenção</option><option>Lavagem</option><option>Pedágio</option><option>Alimentação</option><option>Parcela/Aluguel</option><option>Seguro/IPVA</option><option>Outro</option></select>
   <label>Valor (R$)</label><input id="v" type="text" inputmode="numeric" placeholder="0,00" oninput="mk(this,2,',')" autocomplete="off">
   <label>Observação</label><input id="n" type="text">`;
