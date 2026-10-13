@@ -40,10 +40,11 @@ const FB={apiKey:"AIzaSyARw0UdcZUsBSEkvLYnZ1tIzmzg2RchqvY",authDomain:"gestao-di
 firebase.initializeApp(FB);
 const auth=firebase.auth(),db=firebase.firestore();
 db.enablePersistence({synchronizeTabs:true}).catch(()=>{});
-let D=[],user=null,col=null,unsub=null,ready=false,tab='res',per='mes',add='g',armed=null,msg='',lmsg='';
+let D=[],user=null,col=null,unsub=null,ready=false,err='',tab='res',per='mes',add='g',armed=null,msg='',lmsg='';
+const fe=x=>x.code==='permission-denied'?'Sem permissão no Firestore. Publique as regras na aba Regras do Firestore e confira se está logado.':x.code==='unavailable'?'Sem conexão com o banco.':'Erro: '+(x.code||'')+' '+x.message;
 auth.onAuthStateChanged(u=>{ready=true;user=u;if(unsub){unsub();unsub=null}D=[];
  if(u){col=db.collection('users').doc(u.uid).collection('lancamentos');
-  unsub=col.onSnapshot(s=>{D=s.docs.map(x=>({...x.data(),id:x.id}));draw()},e=>{msg='Erro de sincronização: '+e.message;draw()})}
+  unsub=col.onSnapshot(s=>{D=s.docs.map(x=>({...x.data(),id:x.id}));err='';draw()},e=>{err=fe(e);draw()})}
  draw()});
 function login(){return `<div class="card"><b>Entrar</b><label>E-mail</label><input id="em" type="email" autocomplete="email"><label>Senha</label><input id="pw" type="password" autocomplete="current-password">
  <button class="go" onclick="ent(0)">Entrar</button><button class="go" style="background:var(--card);color:var(--tx);border:1px solid var(--bd)" onclick="ent(1)">Criar conta</button><p class="hint">${esc(lmsg)}</p></div>`}
@@ -100,7 +101,7 @@ function addIt(){const e={ts:Date.now(),t:add,d:document.getElementById('d').val
  if(add==='g'){e.s=document.getElementById('s').value;e.k=num('k')}
  if(add==='a'){e.p=num('p');e.o=num('o');if(e.p<=0){msg='Informe o preço do litro.';return draw()}}
  if(add==='d'){e.c=document.getElementById('c').value;e.n=document.getElementById('n').value}
- const ref=col.doc();e.id=ref.id;D.push(e);ref.set(e).catch(x=>{msg='Erro ao salvar: '+x.message;draw()});msg='✔ Salvo!';
+ const ref=col.doc();e.id=ref.id;D.push(e);ref.set(e).catch(x=>{err=fe(x);draw()});msg='✔ Salvo!';
  if(add==='a'){const l=e.v/e.p,k=consumo().m[e.id];msg+=` ${N(l,2)} L`+(k?` · ${N(k)} km/L neste tanque`:'')}
  draw()}
 function hist(){const c=consumo().m,L=[...D].sort((a,b)=>b.d.localeCompare(a.d)||(b.ts||0)-(a.ts||0)).slice(0,100);
@@ -111,18 +112,12 @@ function hist(){const c=consumo().m,L=[...D].sort((a,b)=>b.d.localeCompare(a.d)|
   const sign=e.t==='g'?'+':'−';
   return `<div class="row"><div>${t}<small>${fd(e.d)} ${s?'· '+s:''}</small></div><div style="text-align:right"><b class="${e.t==='g'?'pos':'neg'}">${sign}${R(e.v)}</b><br><button class="del" onclick="del('${e.id}')">${armed==e.id?'Confirmar?':'Excluir'}</button></div></div>`}).join('')||'<p class="hint">Sem lançamentos ainda.</p>';
  return `<div class="card">${rows}</div>
- <div class="card"><b>Backup</b><p class="hint">Seus dados já ficam salvos na nuvem. Use isto para migrar dados antigos: cole o backup da versão anterior e toque em Restaurar.</p>
- <textarea id="bk" rows="3"></textarea><div class="seg"><button onclick="bk()">Gerar</button><button onclick="rs()">Restaurar</button></div></div>
  <button class="go" style="background:var(--card);color:var(--bad);border:1px solid var(--bd)" onclick="auth.signOut()">Sair da conta</button>`}
 function del(id){if(armed==id){D=D.filter(e=>String(e.id)!==id);col.doc(id).delete();armed=null}else armed=id;draw()}
-function bk(){const t=document.getElementById('bk');t.value=JSON.stringify(D);t.select();try{document.execCommand('copy')}catch(e){}}
-async function rs(){const t=document.getElementById('bk');try{const a=JSON.parse(t.value);if(!Array.isArray(a))throw 0;
- for(let i=0;i<a.length;i+=400){const b=db.batch();a.slice(i,i+400).forEach(e=>{const id=String(e.id).replace(/\//g,'_');b.set(col.doc(id),{...e,id,ts:e.ts||Math.floor(Number(e.id))||Date.now()})});await b.commit()}
- t.value='✔ '+a.length+' lançamentos restaurados'}catch(e){t.value='Texto inválido'}}
 function draw(){
  if(!ready){document.getElementById('v').innerHTML='<p class="hint">Carregando…</p>';return}
  if(!user){document.getElementById('tabs').innerHTML='';document.getElementById('v').innerHTML=login();return}
  document.getElementById('tabs').innerHTML=[['res','Resumo'],['add','Lançar'],['his','Histórico']].map(([k,t])=>`<button class="${tab===k?'on':''}" onclick="tab='${k}';armed=null;draw()">${t}</button>`).join('');
- document.getElementById('v').innerHTML=tab==='res'?resumo():tab==='add'?lancar():hist()}
+ document.getElementById('v').innerHTML=(err?`<div class="card neg">⚠ ${esc(err)}</div>`:'')+(tab==='res'?resumo():tab==='add'?lancar():hist())}
 draw();
 </script></body></html>
