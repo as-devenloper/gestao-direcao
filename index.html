@@ -35,6 +35,11 @@ input,select,textarea{width:100%;padding:11px;border:1px solid var(--bd);border-
 .acc summary::after{content:"▾";color:var(--mut)}
 .acc[open] summary::after{content:"▴"}
 .acc .grid{margin-bottom:10px}
+.it{border-bottom:1px solid var(--bd);padding:10px 0}.it:last-child{border:0}
+.it .row{border:0;padding:0}
+.dets{margin-top:6px;padding:6px 8px;background:var(--bg);border-radius:8px}
+.det{display:flex;justify-content:space-between;gap:8px;font-size:13px;color:var(--mut);padding:2px 0}
+.det b{color:var(--tx);font-weight:600;text-align:right}
 </style></head><body><main>
 <h1>🚕 Gestão Da Direção</h1>
 <div class="tabs" id="tabs"></div>
@@ -67,6 +72,7 @@ const esc=s=>String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&g
 const sum=(a,f)=>a.reduce((s,e)=>s+f(e),0);
 const mk=(el,d,sep)=>{let x=el.value.replace(/\D/g,'').replace(/^0+/,'');if(!x){el.value='';cl();return}x=x.padStart(d+1,'0');el.value=x.slice(0,-d)+sep+x.slice(-d);cl()};
 const cl=()=>{const l=document.getElementById('lt');if(l){const p=num('p'),v=num('v');l.value=p>0&&v>0?(v/p).toFixed(2):''}if(document.getElementById('gc'))cg()};
+const lastP=()=>{const a=D.filter(e=>e.t==='a').sort((x,y)=>y.d.localeCompare(x.d)||(y.ts||0)-(x.ts||0))[0];return a?a.p:0};
 const br=x=>x.toFixed(2).replace('.',',');
 function cg(){const gc=document.getElementById('gc'),lc=document.getElementById('lc'),h=document.getElementById('gh');
  const a=D.filter(e=>e.t==='a').sort((x,y)=>y.d.localeCompare(x.d)||(y.ts||0)-(x.ts||0))[0],p=a?a.p:0,v=num('v'),k=num('k'),kl=num('kl');
@@ -81,11 +87,14 @@ function stats(){const s=start(),P=D.filter(e=>e.d>=s),g=P.filter(e=>e.t==='g'),
  return{ganho,comb,desp,lucro,km,dias,lit,src,margem:ganho>0?lucro/ganho*100:0,pl:lit>0?comb/lit:0,c:cons}}
 const op={};
 const srt=a=>[...a].sort((a,b)=>b.d.localeCompare(a.d)||(b.ts||0)-(a.ts||0));
-function rowOf(e,x){let t,s;
- if(e.t==='g'){t=`💰 ${esc(e.s)}`;s=(e.k?N(e.k)+' km':'')+(e.kl?' · '+N(e.kl)+' km/L':'')}
- if(e.t==='a'){t=`⛽ Abastecimento`;s=`${N(e.v/e.p,2)} L a ${R(e.p)}`}
- if(e.t==='d'){t=`🧾 ${esc(e.c)}`;s=esc(e.n)}
- return `<div class="row"><div>${t}<small>${fd(e.d)} ${s?'· '+s:''}</small></div><div style="text-align:right"><b class="${e.t==='g'?'pos':'neg'}">${e.t==='g'?'+':'−'}${R(e.v)}</b>${x?`<br><button class="del" onclick="del('${e.id}')">${armed==e.id?'Confirmar?':'Excluir'}</button>`:''}</div></div>`}
+function rowOf(e,x){let t,L=[];const f=(a,b)=>L.push([a,b]),d=e.d.split('-').reverse().join('/');
+ if(e.t==='g'){t=`💰 ${esc(e.s)}`;f('Data',d);f('Origem',esc(e.s));f('Valor recebido',R(e.v));
+  if(e.k>0)f('Km rodados',e.k.toFixed(1)+' km');if(e.kl>0)f('Consumo médio',e.kl.toFixed(1)+' km/L');
+  if(e.pl>0)f('Preço do litro usado',R(e.pl));if(e.gc!=null)f('Gasto com combustível',R(e.gc));if(e.lc!=null)f('Lucro nesta corrida',R(e.lc))}
+ if(e.t==='a'){t=`⛽ Abastecimento`;f('Data',d);f('Preço do litro',R(e.p));f('Valor abastecido',R(e.v));f('Litros',(e.v/e.p).toFixed(2)+' L')}
+ if(e.t==='d'){t=`🧾 ${esc(e.c)}`;f('Data',d);f('Categoria',esc(e.c));f('Valor',R(e.v));if(e.n)f('Observação',esc(e.n))}
+ return `<div class="it"><div class="row"><div>${t}<small>${fd(e.d)}</small></div><div style="text-align:right"><b class="${e.t==='g'?'pos':'neg'}">${e.t==='g'?'+':'−'}${R(e.v)}</b>${x?`<br><button class="del" onclick="del('${e.id}')">${armed==e.id?'Confirmar?':'Excluir'}</button>`:''}</div></div>
+ <div class="dets">${L.map(([a,b])=>`<div class="det"><span>${a}</span><b>${b}</b></div>`).join('')}</div></div>`}
 function acc(k,t,tot,cls,body){return `<details class="acc" ${op[k]?'open':''} ontoggle="op['${k}']=this.open"><summary><span>${t}</span><b class="${cls}">${tot}</b></summary>${body}</details>`}
 function resumo(){const S=stats(),P=D.filter(e=>e.d>=start()),c=S.c,lucro=S.ganho-S.comb,total=lucro-S.desp;
  const seg=[['dia','Hoje'],['sem','Semana'],['mes','Mês'],['tudo','Tudo']].map(([k,t])=>`<button class="${per===k?'on':''}" onclick="per='${k}';draw()">${t}</button>`).join('');
@@ -125,7 +134,7 @@ function lancar(){
  <button class="go" onclick="addIt()">Salvar</button><p class="hint" id="msg">${msg}</p></div>`}
 function addIt(){const e={ts:Date.now(),t:add,d:document.getElementById('d').value||today(),v:num('v')};
  if(e.v<=0){msg='Informe o valor.';return draw()}
- if(add==='g'){e.s=document.getElementById('s').value;e.k=num('k');e.kl=num('kl')}
+ if(add==='g'){e.s=document.getElementById('s').value;e.k=num('k');e.kl=num('kl');const p=lastP();if(p>0&&e.k>0&&e.kl>0){e.pl=p;e.gc=+(e.k/e.kl*p).toFixed(2);e.lc=+(e.v-e.gc).toFixed(2)}}
  if(add==='a'){e.p=num('p');if(e.p<=0){msg='Informe o preço do litro.';return draw()}}
  if(add==='d'){e.c=document.getElementById('c').value;e.n=document.getElementById('n').value}
  const ref=col.doc();e.id=ref.id;D.push(e);ref.set(e).catch(x=>{err=fe(x);draw()});msg='✔ Salvo!';
