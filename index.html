@@ -115,7 +115,7 @@ function resumo(){const S=stats(),P=D.filter(e=>e.d>=start()),c=S.c,lucro=S.ganh
  return `<div class="seg">${seg}</div>
  <div class="card"><small class="hint">Lucro (ganhos − combustível)</small><div class="big ${lucro>=0?'lu':'neg'}">${R(lucro)}</div></div>
  <div class="card"><small class="hint">Despesas</small><div class="big neg">${R(S.desp)}</div></div>
- <div class="card tot"><small class="hint">Total (lucro − despesas)</small><div class="big ${total>=0?'lu':'neg'}">${R(total)}</div></div>
+ <div class="card tot"><small class="hint">Total (lucro − despesas)</small><div class="big ${total>=0?'pos':'neg'}">${R(total)}</div></div>
  ${acc('g','💰 Ganhos',R(S.ganho),'pos',`<p class="hint">Recebido <b>${R(S.ganho)}</b> · Combustível gasto <b>${R(S.comb)}</b> · Meu lucro <b class="lu">${R(lucro)}</b></p>`+list('g'))}
  ${acc('a','⛽ Abastecimentos',R(S.comb),'neg',list('a'))}
  ${acc('d','🧾 Despesas',R(S.desp),'neg',list('d'))}
