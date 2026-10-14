@@ -95,7 +95,9 @@ const op={};
 const srt=a=>[...a].sort((a,b)=>b.d.localeCompare(a.d)||(b.ts||0)-(a.ts||0));
 const priceAt=d=>{const a=srt(D.filter(e=>e.t==='a')),b=a.find(x=>x.d<=d)||a[a.length-1];return b?b.p:0};
 function rowOf(e,x){let t,P=[fd(e.d)];
- if(e.t==='g'){t=`💰 ${esc(e.s)}`;if(e.k>0)P.push(e.k.toFixed(1)+' km');if(e.kl>0)P.push(e.kl.toFixed(1)+' km/L');}
+ if(e.t==='g'){t=`💰 ${esc(e.s)}`;if(e.k>0)P.push(e.k.toFixed(1)+' km');if(e.kl>0)P.push(e.kl.toFixed(1)+' km/L');
+  let gc=e.gc,lc=e.lc;if(gc==null&&e.k>0&&e.kl>0){const pl=priceAt(e.d);if(pl>0){gc=e.k/e.kl*pl;lc=e.v-gc}}
+  if(gc!=null)P.push('Combustível '+R(gc),`Lucro <b class="${lc>=0?'pos':'neg'}">${R(lc)}</b>`)}
  if(e.t==='a'){t=`⛽ Abastecimento`;P.push((e.v/e.p).toFixed(2)+' L a '+R(e.p))}
  if(e.t==='d'){t=`🧾 ${esc(e.c)}`;if(e.n)P.push(esc(e.n))}
  return `<div class="row"><div>${t}<small>${P.join(' · ')}</small></div><div style="text-align:right"><b class="${e.t==='g'?'pos':'neg'}">${e.t==='g'?'+':'−'}${R(e.v)}</b>${x?`<br><button class="del" onclick="del('${e.id}')">${armed==e.id?'Confirmar?':'Excluir'}</button>`:''}</div></div>`}
@@ -111,10 +113,10 @@ function resumo(){const S=stats(),P=D.filter(e=>e.d>=start()),c=S.c,lucro=S.ganh
  ${k('Combustível por km',c&&S.pl?R(S.pl/c):'—')}${k('Km informados',S.km?N(S.km,0)+' km':'—')}</div>
  <b>Ganhos por origem</b>${srcs}<p class="hint">Consumo médio, ganho e lucro por km usam os km e o km/L informados em cada ganho.</p>`;
  return `<div class="seg">${seg}</div>
- <div class="card"><small class="hint">Lucro líquido</small><div class="big ${lucro>=0?'lu':'neg'}">${R(lucro)}</div></div>
+ <div class="card"><small class="hint">Lucro líquido</small><div class="big lu">${R(lucro)}</div></div>
  <div class="card"><small class="hint">Despesas</small><div class="big neg">${R(S.desp)}</div></div>
  <div class="card tot"><small class="hint">Total (lucro − despesas)</small><div class="big ${total>=0?'pos':'neg'}">${R(total)}</div></div>
- ${acc('g','💰 Ganhos',R(S.ganho),'pos',`<p class="hint">Recebido <b>${R(S.ganho)}</b> · Combustível gasto <b>${R(S.comb)}</b> · Meu lucro <b class="lu">${R(lucro)}</b></p>`+list('g'))}
+ ${acc('g','💰 Ganhos',R(S.ganho),'pos',list('g'))}
  ${acc('a','⛽ Abastecimentos',R(S.comb),'neg',list('a'))}
  ${acc('d','🧾 Despesas',R(S.desp),'neg',list('d'))}
  ${acc('i','📊 Indicadores','','',ind)}`}
