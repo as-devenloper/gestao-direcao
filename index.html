@@ -123,7 +123,7 @@ function resumo(){const S=stats(),P=D.filter(e=>e.d>=start()),c=S.c,lucro=S.ganh
 function lancar(){
  const seg=[['g','💰 Ganho'],['a','⛽ Abastecer'],['d','🧾 Despesa']].map(([k,t])=>`<button class="${add===k?'on':''}" onclick="add='${k}';msg='';draw()">${t}</button>`).join('');
  let f='';
- if(add==='g')f=`<label>Origem</label><select id="s"><option>99</option><option>Viagem intermunicipal</option><option>Particular</option><option>Outro</option></select>
+ if(add==='g')f=`<label>Origem</label><select id="s"><option>Aplicativos (99 / Uber)</option><option>Viagem Intermunicipal</option><option>Frete</option><option>Encomendas</option><option>Gorjeta</option><option>Outros</option></select>
   <label>Valor recebido (R$)</label><input id="v" type="text" inputmode="numeric" placeholder="0,00" oninput="mk(this,2,',')" autocomplete="off">
   <label>Km rodados (opcional)</label><input id="k" type="text" inputmode="numeric" placeholder="0000.0" oninput="mk(this,1,'.')" autocomplete="off">
   <label>Consumo médio nesta corrida (km/L)</label><input id="kl" type="text" inputmode="numeric" placeholder="00.0" oninput="mk(this,1,'.')" autocomplete="off">
