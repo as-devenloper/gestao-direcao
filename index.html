@@ -2,13 +2,22 @@
 <html lang="pt-BR"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Gestão Da Direção</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#f4f5f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#101317" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Direção">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <style>
 :root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#f4f5f7;--card:#fff;--tx:#1b1f24;--mut:#6b7280;--ac:#0b7a4b;--bad:#c0392b;--bd:#e2e5e9;color-scheme:light}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#101317;--card:#1a1f25;--tx:#eceff3;--mut:#9aa3ae;--ac:#3ddc97;--bad:#ff7b6b;--bd:#2a313a;color-scheme:dark}}
 :root[data-theme="dark"]{--bg:#101317;--card:#1a1f25;--tx:#eceff3;--mut:#9aa3ae;--ac:#3ddc97;--bad:#ff7b6b;--bd:#2a313a;color-scheme:dark}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+body{margin:0;overscroll-behavior-y:none;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;background:var(--bg);color:var(--tx);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 main{max-width:640px;margin:0 auto;padding:12px 12px 80px}
 h1{font-size:20px;margin:6px 0 10px}
 .tabs,.seg{display:flex;gap:6px;margin:8px 0}
@@ -21,7 +30,7 @@ h1{font-size:20px;margin:6px 0 10px}
 .k{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:10px}
 .k small{display:block;color:var(--mut);font-size:12px}.k b{font-size:17px}
 label{display:block;font-size:13px;color:var(--mut);margin:10px 0 3px}
-input,select,textarea{width:100%;padding:11px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);font:inherit}
+input,select,textarea{-webkit-user-select:text;user-select:text;width:100%;padding:11px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);font:inherit}
 .go{width:100%;margin-top:14px;padding:13px;border:0;border-radius:12px;background:var(--ac);color:#fff;font:inherit;font-weight:700}
 .row{display:flex;justify-content:space-between;gap:8px;padding:9px 0;border-bottom:1px solid var(--bd);font-size:14px}
 .row:last-child{border:0}.row small{color:var(--mut);display:block}
@@ -146,4 +155,5 @@ function draw(){
  document.getElementById('tabs').innerHTML=[['res','Resumo'],['add','Lançar'],['his','Histórico']].map(([k,t])=>`<button class="${tab===k?'on':''}" onclick="tab='${k}';armed=null;draw()">${t}</button>`).join('');
  document.getElementById('view').innerHTML=(err?`<div class="card neg">⚠ ${esc(err)}</div>`:'')+(tab==='res'?resumo():tab==='add'?lancar():hist());cl()}
 draw();
+if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 </script></body></html>
