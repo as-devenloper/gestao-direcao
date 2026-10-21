@@ -18,7 +18,7 @@ html{scroll-padding-top:env(safe-area-inset-top,0px)}
 :root[data-theme="dark"]{--bg:#101317;--card:#1a1f25;--tx:#eceff3;--mut:#9aa3ae;--ac:#3ddc97;--bad:#ff7b6b;--bd:#2a313a;--lu:#ffb703;--bl:#5cc8ff;color-scheme:dark}
 *{box-sizing:border-box}
 body{margin:0;overscroll-behavior-y:none;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;background:var(--bg);color:var(--tx);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-main{max-width:640px;margin:0 auto;padding:12px 12px 80px}
+main{max-width:640px;margin:0 auto;padding:12px 12px 100px}
 h1{font-size:20px;margin:6px 0 10px}
 .tabs,.seg{display:flex;gap:6px;margin:8px 0}
 .tabs button,.seg button{flex:1;padding:10px 4px;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:10px;font:inherit;font-size:14px}
@@ -47,6 +47,11 @@ input,select,textarea{-webkit-user-select:text;user-select:text;width:100%;paddi
 .acc[open] summary::after{content:"▴"}
 .acc .grid{margin-bottom:10px}
 .hint b{color:var(--tx)}
+.tabs{position:fixed;left:0;right:0;bottom:0;margin:0;gap:0;background:var(--card);border-top:1px solid var(--bd);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));z-index:9}
+.tabs:empty{display:none}
+.tabs button{display:flex;flex-direction:column;align-items:center;gap:2px;border:0;background:none;color:var(--mut);font-size:11px;padding:4px 0;border-radius:0}
+.tabs button.on{background:none;color:var(--ac);border:0}
+.tabs svg{width:24px;height:24px}
 </style></head><body><main>
 <h1>🚕 Gestão Da Direção</h1>
 <div class="tabs" id="tabs"></div>
@@ -60,7 +65,7 @@ const FB={apiKey:"AIzaSyARw0UdcZUsBSEkvLYnZ1tIzmzg2RchqvY",authDomain:"gestao-di
 firebase.initializeApp(FB);
 const auth=firebase.auth(),db=firebase.firestore();
 db.enablePersistence({synchronizeTabs:true}).catch(()=>{});
-let D=[],user=null,col=null,unsub=null,ready=false,err='',tab='res',per='mes',add='g',armed=null,msg='',lmsg='';
+let D=[],user=null,col=null,unsub=null,ready=false,err='',ed=null,fl=false,tab='res',per='mes',add='g',armed=null,msg='',lmsg='';
 const fe=x=>x.code==='permission-denied'?'Sem permissão no Firestore. Publique as regras na aba Regras do Firestore e confira se está logado.':x.code==='unavailable'?'Sem conexão com o banco.':'Erro: '+(x.code||'')+' '+x.message;
 auth.onAuthStateChanged(u=>{ready=true;user=u;if(unsub){unsub();unsub=null}D=[];
  if(u){col=db.collection('users').doc(u.uid).collection('lancamentos');
@@ -101,8 +106,20 @@ function rowOf(e,x){let t,P=[fd(e.d)];
   if(gc!=null)P.push('Combustível '+R(gc),`Lucro <b class="${lc>=0?'pos':'neg'}">${R(lc)}</b>`)}
  if(e.t==='a'){t=`⛽ Abastecimento`;P.push((e.v/e.p).toFixed(2)+' L a '+R(e.p))}
  if(e.t==='d'){t=`🧾 ${esc(e.c)}`;if(e.n)P.push(esc(e.n))}
- return `<div class="row"><div>${t}<small>${P.join(' · ')}</small></div><div style="text-align:right"><b class="${e.t==='g'?'pos':'neg'}">${e.t==='g'?'+':'−'}${R(e.v)}</b>${x?`<br><button class="del" onclick="del('${e.id}')">${armed==e.id?'Confirmar?':'Excluir'}</button>`:''}</div></div>`}
+ return `<div class="row"><div>${t}<small>${P.join(' · ')}</small></div><div style="text-align:right"><b class="${e.t==='g'?'pos':'neg'}">${e.t==='g'?'+':'−'}${R(e.v)}</b>${x?`<br><button class="del" style="color:var(--ac);margin-right:14px" onclick="edit('${e.id}')">Editar</button><button class="del" onclick="del('${e.id}')">${armed==e.id?'Confirmar?':'Excluir'}</button>`:''}</div></div>`}
 function acc(k,t,tot,cls,body){return `<details class="acc" ${op[k]?'open':''} ontoggle="op['${k}']=this.open"><summary><span>${t}</span><b class="${cls}">${tot}</b></summary>${body}</details>`}
+const wd=d=>new Date(d+'T12:00').toLocaleDateString('pt-BR',{weekday:'short'}).replace('.','');
+const bad=m=>{msg=m;const x=document.getElementById('msg');if(x)x.textContent=m};
+const m2=x=>(+x).toFixed(2).replace('.',',');
+function daily(P){const m={};P.forEach(e=>{const x=m[e.d]||(m[e.d]={d:e.d,g:0,c:0,x:0});if(e.t==='g')x.g+=e.v;else if(e.t==='a')x.c+=e.v;else x.x+=e.v});return Object.values(m).map(x=>({...x,l:x.g-x.c-x.x})).sort((a,b)=>a.d.localeCompare(b.d))}
+function chart(days){const a=days.slice(-14);if(!a.length)return '<p class="hint">Sem dados no período.</p>';
+ const mx=Math.max(...a.map(x=>Math.abs(x.l)),1),W=300,H=120,bw=W/a.length,z=H/2;
+ const bars=a.map((x,i)=>{const h=Math.abs(x.l)/mx*(z-12),y=x.l>=0?z-h:z;return `<rect x="${i*bw+bw*.15}" y="${y}" width="${bw*.7}" height="${Math.max(h,1)}" rx="3" fill="${x.l>=0?'var(--ac)':'var(--bad)'}"/><text x="${i*bw+bw/2}" y="${H+12}" font-size="8" text-anchor="middle" fill="var(--mut)">${x.d.slice(8)}</text>`}).join('');
+ return `<svg viewBox="0 0 ${W} ${H+16}" width="100%"><line x1="0" x2="${W}" y1="${z}" y2="${z}" stroke="var(--bd)"/>${bars}</svg>`}
+function edit(id){const e=D.find(x=>String(x.id)===id);if(!e)return;ed=e;add=e.t;tab='add';armed=null;msg='';fl=true;draw();scrollTo(0,0)}
+function fill(){if(!ed||tab!=='add')return;const g=id=>document.getElementById(id),set=(id,v)=>{if(g(id)&&v!=null&&v!=='')g(id).value=v};
+ ['s','c'].forEach(i=>{const o=g(i),v=ed[i];if(o&&v&&![...o.options].some(x=>x.value===v))o.add(new Option(v,v))});
+ set('d',ed.d);set('v',m2(ed.v));set('p',ed.p?m2(ed.p):null);set('k',ed.k?ed.k.toFixed(1):null);set('kl',ed.kl?ed.kl.toFixed(1):null);set('s',ed.s);set('c',ed.c);set('n',ed.n)}
 function resumo(){const S=stats(),P=D.filter(e=>e.d>=start()),c=S.c,lucro=S.ganho-S.comb,total=lucro-S.desp;
  const seg=[['dia','Hoje'],['sem','Semana'],['mes','Mês'],['tudo','Tudo']].map(([k,t])=>`<button class="${per===k?'on':''}" onclick="per='${k}';draw()">${t}</button>`).join('');
  const k=(t,v)=>`<div class="k"><small>${t}</small><b>${v}</b></div>`;
@@ -113,10 +130,14 @@ function resumo(){const S=stats(),P=D.filter(e=>e.d>=start()),c=S.c,lucro=S.ganh
  ${k('Ganho por km',S.km?R(S.ganho/S.km):'—')}${k('Lucro por km',S.km?R(total/S.km):'—')}
  ${k('Combustível por km',c&&S.pl?R(S.pl/c):'—')}${k('Km informados',S.km?N(S.km,0)+' km':'—')}</div>
  <b>Ganhos por origem</b>${srcs}<p class="hint">Consumo médio, ganho e lucro por km usam os km e o km/L informados em cada ganho.</p>`;
+ const dl=daily(P),wk=dl.filter(x=>x.g>0),best=wk.length?wk.reduce((a,b)=>b.l>a.l?b:a):null,worst=wk.length>1?wk.reduce((a,b)=>b.l<a.l?b:a):null,so=Object.entries(S.src).sort((a,b)=>b[1]-a[1])[0];
+ const dk=(ic,t,x)=>x?`<div class="k"><small>${ic} ${t}</small><b class="${x.l>=0?'pos':'neg'}">${R(x.l)}</b><small>${wd(x.d)} ${fd(x.d)}</small></div>`:`<div class="k"><small>${ic} ${t}</small><b>—</b></div>`;
  return `<div class="seg">${seg}</div>
- <div class="card"><small class="hint">Receitas</small><div class="big ${lucro>=0?'bl':'neg'}">${R(lucro)}</div></div>
- <div class="card"><small class="hint">Despesas</small><div class="big neg">${R(S.desp)}</div></div>
- <div class="card tot"><small class="hint">Lucro Líquido</small><div class="big ${total>=0?'pos':'neg'}">${R(total)}</div></div>
+ <div class="card tot"><small class="hint">Lucro Líquido</small><div class="big ${total>=0?'pos':'neg'}">${R(total)}</div><div class="hint">${S.dias} dia(s) trabalhado(s)${S.dias?' · média '+R(total/S.dias)+'/dia':''}</div></div>
+ <div class="grid"><div class="k"><small>💵 Receitas</small><b class="${lucro>=0?'bl':'neg'}">${R(lucro)}</b></div><div class="k"><small>🧾 Despesas</small><b class="neg">${R(S.desp)}</b></div>
+ ${dk('🏆','Dia mais lucrativo',best)}${dk('📉','Dia de menor lucro',worst)}
+ <div class="k"><small>🚕 Melhor origem</small><b>${so?esc(so[0]):'—'}</b><small>${so?R(so[1]):''}</small></div><div class="k"><small>⛽ Combustível gasto</small><b class="neg">${R(S.comb)}</b></div></div>
+ <div class="card"><b>Lucro por dia</b>${chart(dl)}</div>
  ${acc('g','💰 Ganhos',R(S.ganho),'pos',list('g'))}
  ${acc('a','⛽ Abastecimentos',R(S.comb),'neg',list('a'))}
  ${acc('d','🧾 Despesas',R(S.desp),'neg',list('d'))}
@@ -137,13 +158,14 @@ function lancar(){
  if(add==='d')f=`<label>Categoria</label><select id="c"><option>Manutenção</option><option>Lavagem</option><option>Pedágio</option><option>Alimentação</option><option>Parcela/Aluguel</option><option>Seguro/IPVA</option><option>Outro</option></select>
   <label>Valor (R$)</label><input id="v" type="text" inputmode="numeric" placeholder="0,00" oninput="mk(this,2,',')" autocomplete="off">
   <label>Observação</label><input id="n" type="text">`;
- return `<div class="seg">${seg}</div><div class="card"><label>Data</label><input id="d" type="date" value="${today()}">${f}
- <button class="go" onclick="addIt()">Salvar</button><p class="hint" id="msg">${msg}</p></div>`}
-function addIt(){const e={ts:Date.now(),t:add,d:document.getElementById('d').value||today(),v:num('v')};
- if(e.v<=0){msg='Informe o valor.';return draw()}
- if(add==='g'){e.s=document.getElementById('s').value;e.k=num('k');e.kl=num('kl');const p=lastP();if(p>0&&e.k>0&&e.kl>0){e.pl=p;e.gc=+(e.k/e.kl*p).toFixed(2);e.lc=+(e.v-e.gc).toFixed(2)}}
- if(add==='a'){e.p=num('p');if(e.p<=0){msg='Informe o preço do litro.';return draw()}}
+ return `${ed?'':`<div class="seg">${seg}</div>`}<div class="card">${ed?'<b>✏️ Editando lançamento</b>':''}<label>Data</label><input id="d" type="date" value="${today()}">${f}
+ <button class="go" onclick="addIt()">${ed?'Salvar alterações':'Salvar'}</button>${ed?`<button class="go" style="background:var(--card);color:var(--tx);border:1px solid var(--bd)" onclick="ed=null;tab='his';draw()">Cancelar</button>`:''}<p class="hint" id="msg">${msg}</p></div>`}
+function addIt(){const e={ts:ed?ed.ts:Date.now(),t:add,d:document.getElementById('d').value||today(),v:num('v')};
+ if(e.v<=0){return bad('Informe o valor.')}
+ if(add==='g'){e.s=document.getElementById('s').value;e.k=num('k');e.kl=num('kl');const p=ed?priceAt(e.d):lastP();if(p>0&&e.k>0&&e.kl>0){e.pl=p;e.gc=+(e.k/e.kl*p).toFixed(2);e.lc=+(e.v-e.gc).toFixed(2)}}
+ if(add==='a'){e.p=num('p');if(e.p<=0){return bad('Informe o preço do litro.')}}
  if(add==='d'){e.c=document.getElementById('c').value;e.n=document.getElementById('n').value}
+ if(ed){e.id=ed.id;D=D.map(x=>x.id===e.id?e:x);col.doc(e.id).set(e).catch(x=>{err=fe(x);draw()});ed=null;tab='his';msg='';return draw()}
  const ref=col.doc();e.id=ref.id;D.push(e);ref.set(e).catch(x=>{err=fe(x);draw()});msg='✔ Salvo!';
  if(add==='a'){msg+=` ${N(e.v/e.p,2)} L`}
  draw()}
@@ -154,8 +176,9 @@ function del(id){if(armed==id){D=D.filter(e=>String(e.id)!==id);col.doc(id).dele
 function draw(){
  if(!ready){document.getElementById('view').innerHTML='<p class="hint">Carregando…</p>';return}
  if(!user){document.getElementById('tabs').innerHTML='';document.getElementById('view').innerHTML=login();return}
- document.getElementById('tabs').innerHTML=[['res','Resumo'],['add','Lançar'],['his','Histórico']].map(([k,t])=>`<button class="${tab===k?'on':''}" onclick="tab='${k}';armed=null;draw()">${t}</button>`).join('');
- document.getElementById('view').innerHTML=(err?`<div class="card neg">⚠ ${esc(err)}</div>`:'')+(tab==='res'?resumo():tab==='add'?lancar():hist());cl()}
+ const IC={res:'<rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/>',add:'<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>',his:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'};
+ document.getElementById('tabs').innerHTML=[['res','Painel'],['add','Lançamentos'],['his','Histórico']].map(([k,t])=>`<button class="${tab===k?'on':''}" onclick="tab='${k}';armed=null;ed=null;draw()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${IC[k]}</svg>${t}</button>`).join('');
+ document.getElementById('view').innerHTML=(err?`<div class="card neg">⚠ ${esc(err)}</div>`:'')+(tab==='res'?resumo():tab==='add'?lancar():hist());if(fl){fl=false;fill()}cl()}
 draw();
 if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 </script></body></html>
