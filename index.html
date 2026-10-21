@@ -65,7 +65,7 @@ const FB={apiKey:"AIzaSyARw0UdcZUsBSEkvLYnZ1tIzmzg2RchqvY",authDomain:"gestao-di
 firebase.initializeApp(FB);
 const auth=firebase.auth(),db=firebase.firestore();
 db.enablePersistence({synchronizeTabs:true}).catch(()=>{});
-let D=[],user=null,col=null,unsub=null,ready=false,err='',ed=null,fl=false,pd='',tab='res',per='mes',add='g',armed=null,msg='',lmsg='';
+let D=[],user=null,col=null,unsub=null,ready=false,err='',ed=null,fl=false,pf='',pt='',tab='res',per='mes',add='g',armed=null,msg='',lmsg='';
 const fe=x=>x.code==='permission-denied'?'Sem permissão no Firestore. Publique as regras na aba Regras do Firestore e confira se está logado.':x.code==='unavailable'?'Sem conexão com o banco.':'Erro: '+(x.code||'')+' '+x.message;
 auth.onAuthStateChanged(u=>{ready=true;user=u;if(unsub){unsub();unsub=null}D=[];
  if(u){col=db.collection('users').doc(u.uid).collection('lancamentos');
@@ -92,7 +92,9 @@ function cg(){const gc=document.getElementById('gc'),lc=document.getElementById(
  if(p>0&&k>0&&kl>0){const c=k/kl*p;gc.value=br(c);lc.value=v>0?br(v-c):''}else{gc.value='';lc.value=''}}
 const num=id=>parseFloat(String(document.getElementById(id).value).replace(',','.'))||0;
 function start(){const n=new Date(),t=today();if(per==='dia')return t;if(per==='sem'){n.setDate(n.getDate()-((n.getDay()+6)%7));return iso(n)}if(per==='mes')return t.slice(0,7)+'-01';return '0000'}
-const inP=e=>per==='data'?e.d===pd:e.d>=start();
+const rng=()=>{let a=pf||pt,b=pt||pf;if(a>b)[a,b]=[b,a];return[a,b]};
+const sd=()=>{per=(pf||pt)?'data':'mes';draw()};
+const inP=e=>{if(per!=='data')return e.d>=start();const[a,b]=rng();return e.d>=a&&e.d<=b};
 function stats(){const P=D.filter(inP),g=P.filter(e=>e.t==='g'),a=P.filter(e=>e.t==='a'),x=P.filter(e=>e.t==='d');
  const ganho=sum(g,e=>e.v),comb=sum(a,e=>e.v),desp=sum(x,e=>e.v),lucro=ganho-comb-desp;
  const km=sum(g,e=>e.k||0),dias=new Set(g.map(e=>e.d)).size,lit=sum(a,e=>e.v/e.p);
@@ -114,10 +116,10 @@ const bad=m=>{msg=m;const x=document.getElementById('msg');if(x)x.textContent=m}
 const m2=x=>(+x).toFixed(2).replace('.',',');
 function daily(P){const m={};P.forEach(e=>{const x=m[e.d]||(m[e.d]={d:e.d,g:0,c:0,x:0});if(e.t==='g')x.g+=e.v;else if(e.t==='a')x.c+=e.v;else x.x+=e.v});return Object.values(m).map(x=>({...x,l:x.g-x.c-x.x})).sort((a,b)=>a.d.localeCompare(b.d))}
 function chart(days){const a=days.slice(-14);if(!a.length)return '<p class="hint">Sem dados no período.</p>';
- const mx=Math.max(...a.map(x=>Math.abs(x.l)),1),W=300,H=120,bw=Math.min(W/a.length,40),o=(W-bw*a.length)/2,z=H/2,sh=v=>Math.abs(v)>=1000?(v/1000).toFixed(1).replace('.',',')+'k':Math.round(v)+'';
- const bars=a.map((x,i)=>{const h=Math.abs(x.l)/mx*(z-14),y=x.l>=0?z-h:z,cx=o+i*bw+bw/2,col=x.l>=0?'var(--ac)':'var(--bad)',ty=x.l>=0?y-3:y+Math.max(h,1)+8;
-  return `<rect x="${o+i*bw+bw*.15}" y="${y}" width="${bw*.7}" height="${Math.max(h,1)}" rx="3" fill="${col}"/><text x="${cx}" y="${ty}" font-size="8" font-weight="700" text-anchor="middle" fill="${col}">${sh(x.l)}</text><text x="${cx}" y="${H+12}" font-size="8" text-anchor="middle" fill="var(--mut)">${x.d.slice(8)}</text>`}).join('');
- return `<svg viewBox="0 0 ${W} ${H+16}" width="100%"><line x1="0" x2="${W}" y1="${z}" y2="${z}" stroke="var(--bd)"/>${bars}</svg>`}
+ const mx=Math.max(...a.map(x=>Math.abs(x.l)),1),bw=60,W=Math.max(300,bw*a.length),H=120,o=(W-bw*a.length)/2,z=H/2;
+ const bars=a.map((x,i)=>{const h=Math.abs(x.l)/mx*(z-16),y=x.l>=0?z-h:z,cx=o+i*bw+bw/2,col=x.l>=0?'var(--ac)':'var(--bad)',ty=x.l>=0?y-4:y+Math.max(h,1)+11;
+  return `<rect x="${o+i*bw+bw*.25}" y="${y}" width="${bw*.5}" height="${Math.max(h,1)}" rx="3" fill="${col}"/><text x="${cx}" y="${ty}" font-size="9" font-weight="700" text-anchor="middle" fill="${col}">${R(x.l)}</text><text x="${cx}" y="${H+13}" font-size="9" text-anchor="middle" fill="var(--mut)">${fd(x.d)}</text>`}).join('');
+ return `<div id="cs" style="overflow-x:auto"><svg viewBox="0 0 ${W} ${H+18}" width="${W>300?W:'100%'}"><line x1="0" x2="${W}" y1="${z}" y2="${z}" stroke="var(--bd)"/>${bars}</svg></div>`}
 function edit(id){const e=D.find(x=>String(x.id)===id);if(!e)return;ed=e;add=e.t;tab='add';armed=null;msg='';fl=true;draw();scrollTo(0,0)}
 function fill(){if(!ed||tab!=='add')return;const g=id=>document.getElementById(id),set=(id,v)=>{if(g(id)&&v!=null&&v!=='')g(id).value=v};
  ['s','c'].forEach(i=>{const o=g(i),v=ed[i];if(o&&v&&![...o.options].some(x=>x.value===v))o.add(new Option(v,v))});
@@ -135,7 +137,8 @@ function resumo(){const S=stats(),P=D.filter(inP),c=S.c,lucro=S.ganho-S.comb,tot
  const dl=daily(P),wk=dl.filter(x=>x.g>0),best=wk.length?wk.reduce((a,b)=>b.l>a.l?b:a):null,worst=wk.length>1?wk.reduce((a,b)=>b.l<a.l?b:a):null,so=Object.entries(S.src).sort((a,b)=>b[1]-a[1])[0];
  const dk=(ic,t,x)=>x?`<div class="k"><small>${ic} ${t}</small><b class="${x.l>=0?'pos':'neg'}">${R(x.l)}</b><small>${wd(x.d)} ${fd(x.d)}</small></div>`:`<div class="k"><small>${ic} ${t}</small><b>—</b></div>`;
  return `<div class="seg">${seg}</div>
- <div class="card" style="display:flex;align-items:center;gap:10px;padding:8px 12px"><span>📅</span><input id="pdt" type="date" value="${per==='data'?pd:''}" onchange="pd=this.value;per=pd?'data':'mes';draw()"></div>
+ <div class="card" style="padding:8px 12px"><div style="display:flex;gap:8px;align-items:end"><div style="flex:1"><label style="margin:0 0 3px">📅 De</label><input type="date" value="${pf}" onchange="pf=this.value;sd()"></div><div style="flex:1"><label style="margin:0 0 3px">Até</label><input type="date" value="${pt}" onchange="pt=this.value;sd()"></div>${pf||pt?`<button class="del" style="padding:12px 4px" onclick="pf=pt='';sd()">Limpar</button>`:''}</div>
+ <p class="hint" style="margin:6px 0 0">${per==='data'?(([a,b])=>'Mostrando '+(a===b?fd(a):fd(a)+' a '+fd(b)))(rng()):'Preencha só "De" para ver um dia, ou "De" e "Até" para vários dias.'}</p></div>
  <div class="card tot"><small class="hint">Lucro Líquido</small><div class="big ${total>=0?'pos':'neg'}">${R(total)}</div><div class="hint">${S.dias} dia(s) trabalhado(s)${S.dias?' · média '+R(total/S.dias)+'/dia':''}</div></div>
  <div class="grid"><div class="k"><small>💵 Receitas</small><b class="${lucro>=0?'bl':'neg'}">${R(lucro)}</b></div><div class="k"><small>🧾 Despesas</small><b class="neg">${R(S.desp)}</b></div>
  ${dk('🏆','Dia mais lucrativo',best)}${dk('📉','Dia de menor lucro',worst)}
@@ -181,7 +184,7 @@ function draw(){
  if(!user){document.getElementById('tabs').innerHTML='';document.getElementById('view').innerHTML=login();return}
  const IC={res:'<rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/>',add:'<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>',his:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'};
  document.getElementById('tabs').innerHTML=[['res','Painel'],['add','Lançamentos'],['his','Histórico']].map(([k,t])=>`<button class="${tab===k?'on':''}" onclick="tab='${k}';armed=null;ed=null;draw()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${IC[k]}</svg>${t}</button>`).join('');
- document.getElementById('view').innerHTML=(err?`<div class="card neg">⚠ ${esc(err)}</div>`:'')+(tab==='res'?resumo():tab==='add'?lancar():hist());if(fl){fl=false;fill()}cl()}
+ document.getElementById('view').innerHTML=(err?`<div class="card neg">⚠ ${esc(err)}</div>`:'')+(tab==='res'?resumo():tab==='add'?lancar():hist());if(fl){fl=false;fill()}{const c=document.getElementById('cs');if(c)c.scrollLeft=1e5}cl()}
 draw();
 if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 </script></body></html>
