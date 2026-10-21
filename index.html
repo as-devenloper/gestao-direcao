@@ -65,7 +65,7 @@ const FB={apiKey:"AIzaSyARw0UdcZUsBSEkvLYnZ1tIzmzg2RchqvY",authDomain:"gestao-di
 firebase.initializeApp(FB);
 const auth=firebase.auth(),db=firebase.firestore();
 db.enablePersistence({synchronizeTabs:true}).catch(()=>{});
-let D=[],user=null,col=null,unsub=null,ready=false,err='',ed=null,fl=false,tab='res',per='mes',add='g',armed=null,msg='',lmsg='';
+let D=[],user=null,col=null,unsub=null,ready=false,err='',ed=null,fl=false,pd='',tab='res',per='mes',add='g',armed=null,msg='',lmsg='';
 const fe=x=>x.code==='permission-denied'?'Sem permissão no Firestore. Publique as regras na aba Regras do Firestore e confira se está logado.':x.code==='unavailable'?'Sem conexão com o banco.':'Erro: '+(x.code||'')+' '+x.message;
 auth.onAuthStateChanged(u=>{ready=true;user=u;if(unsub){unsub();unsub=null}D=[];
  if(u){col=db.collection('users').doc(u.uid).collection('lancamentos');
@@ -92,7 +92,8 @@ function cg(){const gc=document.getElementById('gc'),lc=document.getElementById(
  if(p>0&&k>0&&kl>0){const c=k/kl*p;gc.value=br(c);lc.value=v>0?br(v-c):''}else{gc.value='';lc.value=''}}
 const num=id=>parseFloat(String(document.getElementById(id).value).replace(',','.'))||0;
 function start(){const n=new Date(),t=today();if(per==='dia')return t;if(per==='sem'){n.setDate(n.getDate()-((n.getDay()+6)%7));return iso(n)}if(per==='mes')return t.slice(0,7)+'-01';return '0000'}
-function stats(){const s=start(),P=D.filter(e=>e.d>=s),g=P.filter(e=>e.t==='g'),a=P.filter(e=>e.t==='a'),x=P.filter(e=>e.t==='d');
+const inP=e=>per==='data'?e.d===pd:e.d>=start();
+function stats(){const P=D.filter(inP),g=P.filter(e=>e.t==='g'),a=P.filter(e=>e.t==='a'),x=P.filter(e=>e.t==='d');
  const ganho=sum(g,e=>e.v),comb=sum(a,e=>e.v),desp=sum(x,e=>e.v),lucro=ganho-comb-desp;
  const km=sum(g,e=>e.k||0),dias=new Set(g.map(e=>e.d)).size,lit=sum(a,e=>e.v/e.p);
  const gk=g.filter(e=>e.k>0&&e.kl>0),cons=gk.length?sum(gk,e=>e.k)/sum(gk,e=>e.k/e.kl):0;const src={};g.forEach(e=>src[e.s]=(src[e.s]||0)+e.v);
@@ -113,14 +114,15 @@ const bad=m=>{msg=m;const x=document.getElementById('msg');if(x)x.textContent=m}
 const m2=x=>(+x).toFixed(2).replace('.',',');
 function daily(P){const m={};P.forEach(e=>{const x=m[e.d]||(m[e.d]={d:e.d,g:0,c:0,x:0});if(e.t==='g')x.g+=e.v;else if(e.t==='a')x.c+=e.v;else x.x+=e.v});return Object.values(m).map(x=>({...x,l:x.g-x.c-x.x})).sort((a,b)=>a.d.localeCompare(b.d))}
 function chart(days){const a=days.slice(-14);if(!a.length)return '<p class="hint">Sem dados no período.</p>';
- const mx=Math.max(...a.map(x=>Math.abs(x.l)),1),W=300,H=120,bw=W/a.length,z=H/2;
- const bars=a.map((x,i)=>{const h=Math.abs(x.l)/mx*(z-12),y=x.l>=0?z-h:z;return `<rect x="${i*bw+bw*.15}" y="${y}" width="${bw*.7}" height="${Math.max(h,1)}" rx="3" fill="${x.l>=0?'var(--ac)':'var(--bad)'}"/><text x="${i*bw+bw/2}" y="${H+12}" font-size="8" text-anchor="middle" fill="var(--mut)">${x.d.slice(8)}</text>`}).join('');
+ const mx=Math.max(...a.map(x=>Math.abs(x.l)),1),W=300,H=120,bw=Math.min(W/a.length,40),o=(W-bw*a.length)/2,z=H/2,sh=v=>Math.abs(v)>=1000?(v/1000).toFixed(1).replace('.',',')+'k':Math.round(v)+'';
+ const bars=a.map((x,i)=>{const h=Math.abs(x.l)/mx*(z-14),y=x.l>=0?z-h:z,cx=o+i*bw+bw/2,col=x.l>=0?'var(--ac)':'var(--bad)',ty=x.l>=0?y-3:y+Math.max(h,1)+8;
+  return `<rect x="${o+i*bw+bw*.15}" y="${y}" width="${bw*.7}" height="${Math.max(h,1)}" rx="3" fill="${col}"/><text x="${cx}" y="${ty}" font-size="8" font-weight="700" text-anchor="middle" fill="${col}">${sh(x.l)}</text><text x="${cx}" y="${H+12}" font-size="8" text-anchor="middle" fill="var(--mut)">${x.d.slice(8)}</text>`}).join('');
  return `<svg viewBox="0 0 ${W} ${H+16}" width="100%"><line x1="0" x2="${W}" y1="${z}" y2="${z}" stroke="var(--bd)"/>${bars}</svg>`}
 function edit(id){const e=D.find(x=>String(x.id)===id);if(!e)return;ed=e;add=e.t;tab='add';armed=null;msg='';fl=true;draw();scrollTo(0,0)}
 function fill(){if(!ed||tab!=='add')return;const g=id=>document.getElementById(id),set=(id,v)=>{if(g(id)&&v!=null&&v!=='')g(id).value=v};
  ['s','c'].forEach(i=>{const o=g(i),v=ed[i];if(o&&v&&![...o.options].some(x=>x.value===v))o.add(new Option(v,v))});
  set('d',ed.d);set('v',m2(ed.v));set('p',ed.p?m2(ed.p):null);set('k',ed.k?ed.k.toFixed(1):null);set('kl',ed.kl?ed.kl.toFixed(1):null);set('s',ed.s);set('c',ed.c);set('n',ed.n)}
-function resumo(){const S=stats(),P=D.filter(e=>e.d>=start()),c=S.c,lucro=S.ganho-S.comb,total=lucro-S.desp;
+function resumo(){const S=stats(),P=D.filter(inP),c=S.c,lucro=S.ganho-S.comb,total=lucro-S.desp;
  const seg=[['dia','Hoje'],['sem','Semana'],['mes','Mês'],['tudo','Tudo']].map(([k,t])=>`<button class="${per===k?'on':''}" onclick="per='${k}';draw()">${t}</button>`).join('');
  const k=(t,v)=>`<div class="k"><small>${t}</small><b>${v}</b></div>`;
  const list=t=>srt(P.filter(e=>e.t===t)).map(e=>rowOf(e,0)).join('')||'<p class="hint">Nada neste período.</p>';
@@ -133,11 +135,12 @@ function resumo(){const S=stats(),P=D.filter(e=>e.d>=start()),c=S.c,lucro=S.ganh
  const dl=daily(P),wk=dl.filter(x=>x.g>0),best=wk.length?wk.reduce((a,b)=>b.l>a.l?b:a):null,worst=wk.length>1?wk.reduce((a,b)=>b.l<a.l?b:a):null,so=Object.entries(S.src).sort((a,b)=>b[1]-a[1])[0];
  const dk=(ic,t,x)=>x?`<div class="k"><small>${ic} ${t}</small><b class="${x.l>=0?'pos':'neg'}">${R(x.l)}</b><small>${wd(x.d)} ${fd(x.d)}</small></div>`:`<div class="k"><small>${ic} ${t}</small><b>—</b></div>`;
  return `<div class="seg">${seg}</div>
+ <div class="card" style="display:flex;align-items:center;gap:10px;padding:8px 12px"><span>📅</span><input id="pdt" type="date" value="${per==='data'?pd:''}" onchange="pd=this.value;per=pd?'data':'mes';draw()"></div>
  <div class="card tot"><small class="hint">Lucro Líquido</small><div class="big ${total>=0?'pos':'neg'}">${R(total)}</div><div class="hint">${S.dias} dia(s) trabalhado(s)${S.dias?' · média '+R(total/S.dias)+'/dia':''}</div></div>
  <div class="grid"><div class="k"><small>💵 Receitas</small><b class="${lucro>=0?'bl':'neg'}">${R(lucro)}</b></div><div class="k"><small>🧾 Despesas</small><b class="neg">${R(S.desp)}</b></div>
  ${dk('🏆','Dia mais lucrativo',best)}${dk('📉','Dia de menor lucro',worst)}
  <div class="k"><small>🚕 Melhor origem</small><b>${so?esc(so[0]):'—'}</b><small>${so?R(so[1]):''}</small></div><div class="k"><small>⛽ Combustível gasto</small><b class="neg">${R(S.comb)}</b></div></div>
- <div class="card"><b>Lucro por dia</b>${chart(dl)}</div>
+ <div class="card"><b>Lucro por dia (R$)</b>${chart(dl)}</div>
  ${acc('g','💰 Ganhos',R(S.ganho),'pos',list('g'))}
  ${acc('a','⛽ Abastecimentos',R(S.comb),'neg',list('a'))}
  ${acc('d','🧾 Despesas',R(S.desp),'neg',list('d'))}
