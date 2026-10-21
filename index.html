@@ -56,6 +56,8 @@ input,select,textarea{-webkit-user-select:text;user-select:text;width:100%;paddi
 .hb .tr{background:var(--bg);border-radius:6px;height:12px;overflow:hidden}
 .hb i{display:block;height:100%;border-radius:6px;min-width:2px}
 .hb b{font-size:13px}
+.mn{width:44px;height:44px;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:12px;font-size:24px;line-height:1}
+.mn:disabled{opacity:.35}
 </style></head><body><main>
 <h1>🚕 Gestão Da Direção</h1>
 <div class="tabs" id="tabs"></div>
@@ -69,7 +71,7 @@ const FB={apiKey:"AIzaSyARw0UdcZUsBSEkvLYnZ1tIzmzg2RchqvY",authDomain:"gestao-di
 firebase.initializeApp(FB);
 const auth=firebase.auth(),db=firebase.firestore();
 db.enablePersistence({synchronizeTabs:true}).catch(()=>{});
-let D=[],user=null,col=null,unsub=null,ready=false,err='',ed=null,fl=false,pf='',pt='',tab='res',per='mes',add='g',armed=null,msg='',lmsg='';
+let D=[],user=null,col=null,unsub=null,ready=false,err='',ed=null,fl=false,pf='',pt='',pm='',tab='res',per='mes',add='g',armed=null,msg='',lmsg='';
 const fe=x=>x.code==='permission-denied'?'Sem permissão no Firestore. Publique as regras na aba Regras do Firestore e confira se está logado.':x.code==='unavailable'?'Sem conexão com o banco.':'Erro: '+(x.code||'')+' '+x.message;
 auth.onAuthStateChanged(u=>{ready=true;user=u;if(unsub){unsub();unsub=null}D=[];
  if(u){col=db.collection('users').doc(u.uid).collection('lancamentos');
@@ -98,7 +100,9 @@ const num=id=>parseFloat(String(document.getElementById(id).value).replace(',','
 function start(){const n=new Date(),t=today();if(per==='dia')return t;if(per==='sem'){n.setDate(n.getDate()-((n.getDay()+6)%7));return iso(n)}if(per==='mes')return t.slice(0,7)+'-01';return '0000'}
 const rng=()=>{let a=pf||pt,b=pt||pf;if(a>b)[a,b]=[b,a];return[a,b]};
 const sd=()=>{per=(pf||pt)?'data':'mes';draw()};
-const inP=e=>{if(per!=='data')return e.d>=start();const[a,b]=rng();return e.d>=a&&e.d<=b};
+const PM=()=>pm||today().slice(0,7);
+function mv(n){const[y,m]=PM().split('-').map(Number),d=new Date(y,m-1+n,1),nm=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');if(nm>today().slice(0,7))return;pm=nm;per='mes';pf=pt='';draw()}
+const inP=e=>{if(per==='mes')return e.d.slice(0,7)===PM();if(per!=='data')return e.d>=start();const[a,b]=rng();return e.d>=a&&e.d<=b};
 function stats(){const P=D.filter(inP),g=P.filter(e=>e.t==='g'),a=P.filter(e=>e.t==='a'),x=P.filter(e=>e.t==='d');
  const ganho=sum(g,e=>e.v),comb=sum(a,e=>e.v),desp=sum(x,e=>e.v),lucro=ganho-comb-desp;
  const km=sum(g,e=>e.k||0),dias=new Set(g.map(e=>e.d)).size,lit=sum(a,e=>e.v/e.p);
@@ -129,7 +133,7 @@ function fill(){if(!ed||tab!=='add')return;const g=id=>document.getElementById(i
  ['s','c'].forEach(i=>{const o=g(i),v=ed[i];if(o&&v&&![...o.options].some(x=>x.value===v))o.add(new Option(v,v))});
  set('d',ed.d);set('v',m2(ed.v));set('p',ed.p?m2(ed.p):null);set('k',ed.k?ed.k.toFixed(1):null);set('kl',ed.kl?ed.kl.toFixed(1):null);set('s',ed.s);set('c',ed.c);set('n',ed.n)}
 function resumo(){const S=stats(),P=D.filter(inP),c=S.c,lucro=S.ganho-S.comb,total=lucro-S.desp;
- const seg=[['dia','Hoje'],['sem','Semana'],['mes','Mês'],['tudo','Tudo']].map(([k,t])=>`<button class="${per===k?'on':''}" onclick="per='${k}';draw()">${t}</button>`).join('');
+ const seg=[['dia','Hoje'],['sem','Semana'],['mes','Mês'],['tudo','Tudo']].map(([k,t])=>`<button class="${per===k?'on':''}" onclick="per='${k}';pf=pt='';if(per==='mes')pm='';draw()">${t}</button>`).join('');
  const k=(t,v)=>`<div class="k"><small>${t}</small><b>${v}</b></div>`;
  const list=t=>srt(P.filter(e=>e.t===t)).map(e=>rowOf(e,0)).join('')||'<p class="hint">Nada neste período.</p>';
  const srcs=Object.entries(S.src).map(([n,v])=>`<div class="row"><span>${esc(n)}</span><b>${R(v)}</b></div>`).join('')||'<p class="hint">Nenhum ganho lançado neste período.</p>';
@@ -138,9 +142,11 @@ function resumo(){const S=stats(),P=D.filter(inP),c=S.c,lucro=S.ganho-S.comb,tot
  const perkm=pk?hbars([['Ganho/km',gkm,R(gkm),'var(--ac)'],['Combustível/km',ckm,R(ckm),'var(--bad)'],['Lucro/km',lkm,R(lkm),lkm>=0?'var(--lu)':'var(--bad)']]):'<p class="hint">Informe os km rodados nos ganhos para ver.</p>';
  const org=Object.keys(S.src).length?hbars(Object.entries(S.src).sort((a,b)=>b[1]-a[1]).map(([n,v])=>[esc(n),v,R(v),'var(--bl)'])):'<p class="hint">Nenhum ganho no período.</p>';
  const ind=`<div class="card"><b>Indicadores</b><p class="hint" style="margin:8px 0 2px">R$ por km rodado</p>${perkm}<p class="hint" style="margin:12px 0 2px">Ganhos por origem</p>${org}<div class="grid" style="margin-top:12px">${k('Lucro por dia trabalhado',S.dias?R(total/S.dias):'—')}${k('Margem',S.ganho>0?N(total/S.ganho*100)+'%':'—')}${k('Consumo médio',c?N(c)+' km/L':'—')}${k('Preço médio do litro',S.pl?R(S.pl):'—')}${k('Km informados',pk?N(S.km,0)+' km':'—')}</div></div>`;
+ const cur=today().slice(0,7),dt=new Date(PM()+'-01T12:00'),mn=dt.toLocaleDateString('pt-BR',{month:'long'}).toUpperCase()+(dt.getFullYear()!==new Date().getFullYear()?' '+dt.getFullYear():'');
  const dl=daily(P),wk=dl.filter(x=>x.g>0),best=wk.length?wk.reduce((a,b)=>b.l>a.l?b:a):null,worst=wk.length>1?wk.reduce((a,b)=>b.l<a.l?b:a):null,so=Object.entries(S.src).sort((a,b)=>b[1]-a[1])[0];
  const dk=(ic,t,x)=>x?`<div class="k"><small>${ic} ${t}</small><b class="${x.l>=0?'pos':'neg'}">${R(x.l)}</b><small>${wd(x.d)} ${fd(x.d)}</small></div>`:`<div class="k"><small>${ic} ${t}</small><b>—</b></div>`;
- return `<div class="seg">${seg}</div>
+ return `<div style="display:flex;align-items:center;justify-content:space-between;margin:4px 0 8px"><button class="mn" onclick="mv(-1)">‹</button><b style="font-size:18px;letter-spacing:1px">${mn}</b><button class="mn" onclick="mv(1)" ${PM()>=cur?'disabled':''}>›</button></div>
+ <div class="seg">${seg}</div>
  <div class="card" style="padding:8px 12px"><div style="display:flex;gap:8px;align-items:end"><div style="flex:1"><label style="margin:0 0 3px">📅 De</label><input type="date" value="${pf}" onchange="pf=this.value;sd()"></div><div style="flex:1"><label style="margin:0 0 3px">Até</label><input type="date" value="${pt}" onchange="pt=this.value;sd()"></div>${pf||pt?`<button class="del" style="padding:12px 4px" onclick="pf=pt='';sd()">Limpar</button>`:''}</div>
  <p class="hint" style="margin:6px 0 0">${per==='data'?(([a,b])=>'Mostrando '+(a===b?fd(a):fd(a)+' a '+fd(b)))(rng()):'Preencha só "De" para ver um dia, ou "De" e "Até" para vários dias.'}</p></div>
  <div class="card tot"><small class="hint">Lucro Líquido</small><div class="big ${total>=0?'pos':'neg'}">${R(total)}</div><div class="hint">${S.dias} dia(s) trabalhado(s)${S.dias?' · média '+R(total/S.dias)+'/dia':''}</div></div>
