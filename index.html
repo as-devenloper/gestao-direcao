@@ -52,6 +52,10 @@ input,select,textarea{-webkit-user-select:text;user-select:text;width:100%;paddi
 .tabs button{display:flex;flex-direction:column;align-items:center;gap:2px;border:0;background:none;color:var(--mut);font-size:11px;padding:4px 0;border-radius:0}
 .tabs button.on{background:none;color:var(--ac);border:0}
 .tabs svg{width:24px;height:24px}
+.hb{display:grid;grid-template-columns:104px 1fr auto;gap:8px;align-items:center;font-size:12px;line-height:1.2;margin:7px 0}
+.hb .tr{background:var(--bg);border-radius:6px;height:12px;overflow:hidden}
+.hb i{display:block;height:100%;border-radius:6px;min-width:2px}
+.hb b{font-size:13px}
 </style></head><body><main>
 <h1>🚕 Gestão Da Direção</h1>
 <div class="tabs" id="tabs"></div>
@@ -129,11 +133,11 @@ function resumo(){const S=stats(),P=D.filter(inP),c=S.c,lucro=S.ganho-S.comb,tot
  const k=(t,v)=>`<div class="k"><small>${t}</small><b>${v}</b></div>`;
  const list=t=>srt(P.filter(e=>e.t===t)).map(e=>rowOf(e,0)).join('')||'<p class="hint">Nada neste período.</p>';
  const srcs=Object.entries(S.src).map(([n,v])=>`<div class="row"><span>${esc(n)}</span><b>${R(v)}</b></div>`).join('')||'<p class="hint">Nenhum ganho lançado neste período.</p>';
- const ind=`<div class="grid">${k('Lucro por dia trabalhado',S.dias?R(total/S.dias):'—')}${k('Margem',S.ganho>0?N(total/S.ganho*100)+'%':'—')}
- ${k('Consumo médio',c?N(c)+' km/L':'—')}${k('Preço médio do litro',S.pl?R(S.pl):'—')}
- ${k('Ganho por km',S.km?R(S.ganho/S.km):'—')}${k('Lucro por km',S.km?R(total/S.km):'—')}
- ${k('Combustível por km',c&&S.pl?R(S.pl/c):'—')}${k('Km informados',S.km?N(S.km,0)+' km':'—')}</div>
- <b>Ganhos por origem</b>${srcs}<p class="hint">Consumo médio, ganho e lucro por km usam os km e o km/L informados em cada ganho.</p>`;
+ const hbars=a=>{const m=Math.max(...a.map(x=>Math.abs(x[1])),0.0001);return a.map(([l,v,t,c])=>`<div class="hb"><span>${l}</span><div class="tr"><i style="width:${Math.abs(v)/m*100}%;background:${c}"></i></div><b>${t}</b></div>`).join('')};
+ const pk=S.km>0,gkm=pk?S.ganho/S.km:0,ckm=c&&S.pl?S.pl/c:0,lkm=pk?total/S.km:0;
+ const perkm=pk?hbars([['Ganho/km',gkm,R(gkm),'var(--ac)'],['Combustível/km',ckm,R(ckm),'var(--bad)'],['Lucro/km',lkm,R(lkm),lkm>=0?'var(--lu)':'var(--bad)']]):'<p class="hint">Informe os km rodados nos ganhos para ver.</p>';
+ const org=Object.keys(S.src).length?hbars(Object.entries(S.src).sort((a,b)=>b[1]-a[1]).map(([n,v])=>[esc(n),v,R(v),'var(--bl)'])):'<p class="hint">Nenhum ganho no período.</p>';
+ const ind=`<div class="card"><b>Indicadores</b><p class="hint" style="margin:8px 0 2px">R$ por km rodado</p>${perkm}<p class="hint" style="margin:12px 0 2px">Ganhos por origem</p>${org}<div class="grid" style="margin-top:12px">${k('Lucro por dia trabalhado',S.dias?R(total/S.dias):'—')}${k('Margem',S.ganho>0?N(total/S.ganho*100)+'%':'—')}${k('Consumo médio',c?N(c)+' km/L':'—')}${k('Preço médio do litro',S.pl?R(S.pl):'—')}${k('Km informados',pk?N(S.km,0)+' km':'—')}</div></div>`;
  const dl=daily(P),wk=dl.filter(x=>x.g>0),best=wk.length?wk.reduce((a,b)=>b.l>a.l?b:a):null,worst=wk.length>1?wk.reduce((a,b)=>b.l<a.l?b:a):null,so=Object.entries(S.src).sort((a,b)=>b[1]-a[1])[0];
  const dk=(ic,t,x)=>x?`<div class="k"><small>${ic} ${t}</small><b class="${x.l>=0?'pos':'neg'}">${R(x.l)}</b><small>${wd(x.d)} ${fd(x.d)}</small></div>`:`<div class="k"><small>${ic} ${t}</small><b>—</b></div>`;
  return `<div class="seg">${seg}</div>
@@ -144,10 +148,10 @@ function resumo(){const S=stats(),P=D.filter(inP),c=S.c,lucro=S.ganho-S.comb,tot
  ${dk('🏆','Dia mais lucrativo',best)}${dk('📉','Dia de menor lucro',worst)}
  <div class="k"><small>🚕 Melhor origem</small><b>${so?esc(so[0]):'—'}</b><small>${so?R(so[1]):''}</small></div><div class="k"><small>⛽ Combustível gasto</small><b class="neg">${R(S.comb)}</b></div></div>
  <div class="card"><b>Lucro por dia (R$)</b>${chart(dl)}</div>
+ ${ind}
  ${acc('g','💰 Ganhos',R(S.ganho),'pos',list('g'))}
  ${acc('a','⛽ Abastecimentos',R(S.comb),'neg',list('a'))}
- ${acc('d','🧾 Despesas',R(S.desp),'neg',list('d'))}
- ${acc('i','📊 Indicadores','','',ind)}`}
+ ${acc('d','🧾 Despesas',R(S.desp),'neg',list('d'))}`}
 function lancar(){
  const seg=[['g','💰 Ganho'],['a','⛽ Abastecer'],['d','🧾 Despesa']].map(([k,t])=>`<button class="${add===k?'on':''}" onclick="add='${k}';msg='';draw()">${t}</button>`).join('');
  let f='';
