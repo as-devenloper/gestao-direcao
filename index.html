@@ -58,8 +58,18 @@ input,select,textarea{-webkit-user-select:text;user-select:text;width:100%;paddi
 .hb b{font-size:13px}
 .mn{width:44px;height:44px;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:12px;font-size:24px;line-height:1}
 .mn:disabled{opacity:.35}
+.hd{display:flex;align-items:center;justify-content:space-between;margin:6px 0 10px}
+.logo{height:44px;width:auto}
+.so{display:flex;align-items:center;gap:6px;border:1px solid var(--bd);background:var(--card);color:var(--mut);border-radius:10px;padding:8px 10px;font:inherit;font-size:13px}
+.so svg{width:18px;height:18px}
+.so[hidden]{display:none}
 </style></head><body><main>
-<h1>🚕 Gestão Da Direção</h1>
+<header class="hd"><svg class="logo" viewBox="0 0 176 48" role="img" aria-label="Gestão Da Direção"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#14a86c"/><stop offset="1" stop-color="#0a6b42"/></linearGradient></defs>
+<rect width="48" height="48" rx="13" fill="url(#lg)"/><circle cx="24" cy="24" r="13" fill="none" stroke="#fff" stroke-width="3.4"/><path d="M24 11A13 13 0 0 1 37 24" fill="none" stroke="#ffb703" stroke-width="3.4" stroke-linecap="round"/>
+<path d="M12 24h24M24 24v12.5" stroke="#fff" stroke-width="3" stroke-linecap="round"/><circle cx="24" cy="24" r="4.2" fill="#fff"/><circle cx="24" cy="24" r="1.8" fill="#0b7a4b"/>
+<text x="58" y="24" font-size="24" font-weight="800" textLength="112" lengthAdjust="spacing" fill="var(--tx)" font-family="system-ui,-apple-system,'Segoe UI',Roboto,sans-serif">GESTÃO</text>
+<text x="58" y="40" font-size="12" font-weight="700" textLength="112" lengthAdjust="spacing" fill="var(--lu)" font-family="system-ui,-apple-system,'Segoe UI',Roboto,sans-serif">DA DIREÇÃO</text></svg>
+<button id="so" class="so" onclick="auth.signOut()" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>Sair</button></header>
 <div class="tabs" id="tabs"></div>
 <div id="view"></div>
 </main>
@@ -186,10 +196,10 @@ function addIt(){const e={ts:ed?ed.ts:Date.now(),t:add,d:document.getElementById
  if(add==='a'){msg+=` ${N(e.v/e.p,2)} L`}
  draw()}
 function hist(){const rows=srt(D).slice(0,100).map(e=>rowOf(e,1)).join('')||'<p class="hint">Sem lançamentos ainda.</p>';
- return `<div class="card">${rows}</div>
- <button class="go" style="background:var(--card);color:var(--bad);border:1px solid var(--bd)" onclick="auth.signOut()">Sair da conta</button>`}
+ return `<div class="card">${rows}</div>`}
 function del(id){if(armed==id){D=D.filter(e=>String(e.id)!==id);col.doc(id).delete();armed=null}else armed=id;draw()}
 function draw(){
+ const so=document.getElementById('so');if(so)so.hidden=!user;
  if(!ready){document.getElementById('view').innerHTML='<p class="hint">Carregando…</p>';return}
  if(!user){document.getElementById('tabs').innerHTML='';document.getElementById('view').innerHTML=login();return}
  const IC={res:'<rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/>',add:'<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>',his:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'};
