@@ -125,7 +125,7 @@ function rowOf(e,x){let t,P=[fd(e.d)];
  if(e.t==='g'){t=`💰 ${esc(e.s)}`;if(e.k>0)P.push(e.k.toFixed(1)+' km');if(e.kl>0)P.push(e.kl.toFixed(1)+' km/L');
   let gc=e.gc,lc=e.lc;if(gc==null&&e.k>0&&e.kl>0){const pl=priceAt(e.d);if(pl>0){gc=e.k/e.kl*pl;lc=e.v-gc}}
   if(gc!=null)P.push('Combustível '+R(gc),`Lucro <b class="${lc>=0?'pos':'neg'}">${R(lc)}</b>`)}
- if(e.t==='a'){t=`⛽ Abastecimento`;P.push((e.v/e.p).toFixed(2)+' L a '+R(e.p))}
+ if(e.t==='a'){t=`⛽ Abastecimento${e.cb?' · '+e.cb:''}`;P.push((e.v/e.p).toFixed(2)+' L a '+R(e.p))}
  if(e.t==='d'){t=`🧾 ${esc(e.c)}`;if(e.n)P.push(esc(e.n))}
  return `<div class="row"><div>${t}<small>${P.join(' · ')}</small></div><div style="text-align:right"><b class="${e.t==='g'?'pos':'neg'}">${e.t==='g'?'+':'−'}${R(e.v)}</b>${x?`<br><button class="del" style="color:var(--ac);margin-right:14px" onclick="edit('${e.id}')">Editar</button><button class="del" onclick="del('${e.id}')">${armed==e.id?'Confirmar?':'Excluir'}</button>`:''}</div></div>`}
 function acc(k,t,tot,cls,body){return `<details class="acc" ${op[k]?'open':''} ontoggle="op['${k}']=this.open"><summary><span>${t}</span><b class="${cls}">${tot}</b></summary>${body}</details>`}
@@ -141,7 +141,7 @@ function chart(days){const a=days.slice(-14);if(!a.length)return '<p class="hint
 function edit(id){const e=D.find(x=>String(x.id)===id);if(!e)return;ed=e;add=e.t;tab='add';armed=null;msg='';fl=true;draw();scrollTo(0,0)}
 function fill(){if(!ed||tab!=='add')return;const g=id=>document.getElementById(id),set=(id,v)=>{if(g(id)&&v!=null&&v!=='')g(id).value=v};
  ['s','c'].forEach(i=>{const o=g(i),v=ed[i];if(o&&v&&![...o.options].some(x=>x.value===v))o.add(new Option(v,v))});
- set('d',ed.d);set('v',m2(ed.v));set('p',ed.p?m2(ed.p):null);set('k',ed.k?ed.k.toFixed(1):null);set('kl',ed.kl?ed.kl.toFixed(1):null);set('s',ed.s);set('c',ed.c);set('n',ed.n)}
+ set('d',ed.d);set('v',m2(ed.v));set('p',ed.p?m2(ed.p):null);set('k',ed.k?ed.k.toFixed(1):null);set('kl',ed.kl?ed.kl.toFixed(1):null);set('s',ed.s);set('cb',ed.cb);set('c',ed.c);set('n',ed.n)}
 function resumo(){const S=stats(),P=D.filter(inP),c=S.c,lucro=S.ganho-S.comb,total=lucro-S.desp;
  const seg=[['dia','Hoje'],['sem','Semana'],['mes','Mês'],['tudo','Tudo']].map(([k,t])=>`<button class="${per===k?'on':''}" onclick="per='${k}';pf=pt='';if(per==='mes')pm='';draw()">${t}</button>`).join('');
  const k=(t,v)=>`<div class="k"><small>${t}</small><b>${v}</b></div>`;
@@ -153,6 +153,7 @@ function resumo(){const S=stats(),P=D.filter(inP),c=S.c,lucro=S.ganho-S.comb,tot
  const org=Object.keys(S.src).length?hbars(Object.entries(S.src).sort((a,b)=>b[1]-a[1]).map(([n,v])=>[esc(n),v,R(v),'var(--bl)'])):'<p class="hint">Nenhum ganho no período.</p>';
  const ind=`<div class="card"><b>Indicadores</b><p class="hint" style="margin:8px 0 2px">R$ por km rodado</p>${perkm}<p class="hint" style="margin:12px 0 2px">Ganhos por origem</p>${org}<div class="grid" style="margin-top:12px">${k('Lucro por dia trabalhado',S.dias?R(total/S.dias):'—')}${k('Margem',S.ganho>0?N(total/S.ganho*100)+'%':'—')}${k('Consumo médio',c?N(c)+' km/L':'—')}${k('Preço médio do litro',S.pl?R(S.pl):'—')}${k('Km informados',pk?N(S.km,0)+' km':'—')}</div></div>`;
  const cur=today().slice(0,7),dt=new Date(PM()+'-01T12:00'),mn=dt.toLocaleDateString('pt-BR',{month:'long'}).toUpperCase()+(dt.getFullYear()!==new Date().getFullYear()?' '+dt.getFullYear():'');
+ const bt={};P.filter(e=>e.t==='a').forEach(e=>{const n=e.cb||'Não informado';bt[n]=(bt[n]||0)+e.v});const btx=Object.keys(bt).some(n=>n!=='Não informado')?Object.entries(bt).map(([n,v])=>n+' '+R(v)).join(' · '):'';
  const dl=daily(P),wk=dl.filter(x=>x.g>0),best=wk.length?wk.reduce((a,b)=>b.l>a.l?b:a):null,worst=wk.length>1?wk.reduce((a,b)=>b.l<a.l?b:a):null,so=Object.entries(S.src).sort((a,b)=>b[1]-a[1])[0];
  const dk=(ic,t,x)=>x?`<div class="k"><small>${ic} ${t}</small><b class="${x.l>=0?'pos':'neg'}">${R(x.l)}</b><small>${wd(x.d)} ${fd(x.d)}</small></div>`:`<div class="k"><small>${ic} ${t}</small><b>—</b></div>`;
  return `<div style="display:flex;align-items:center;justify-content:space-between;margin:4px 0 8px"><button class="mn" onclick="mv(-1)">‹</button><b style="font-size:18px;letter-spacing:1px">${mn}</b><button class="mn" onclick="mv(1)" ${PM()>=cur?'disabled':''}>›</button></div>
@@ -162,7 +163,7 @@ function resumo(){const S=stats(),P=D.filter(inP),c=S.c,lucro=S.ganho-S.comb,tot
  <div class="card tot"><small class="hint">Lucro Líquido</small><div class="big ${total>=0?'pos':'neg'}">${R(total)}</div><div class="hint">${S.dias} dia(s) trabalhado(s)${S.dias?' · média '+R(total/S.dias)+'/dia':''}</div></div>
  <div class="grid"><div class="k"><small>💵 Receitas</small><b class="${lucro>=0?'bl':'neg'}">${R(lucro)}</b></div><div class="k"><small>🧾 Despesas</small><b class="neg">${R(S.desp)}</b></div>
  ${dk('🏆','Dia mais lucrativo',best)}${dk('📉','Dia de menor lucro',worst)}
- <div class="k"><small>🚕 Melhor origem</small><b>${so?esc(so[0]):'—'}</b><small>${so?R(so[1]):''}</small></div><div class="k"><small>⛽ Combustível gasto</small><b class="neg">${R(S.comb)}</b></div></div>
+ <div class="k"><small>🚕 Melhor origem</small><b>${so?esc(so[0]):'—'}</b><small>${so?R(so[1]):''}</small></div><div class="k"><small>⛽ Combustível gasto</small><b class="neg">${R(S.comb)}</b><small>${btx}</small></div></div>
  <div class="card"><b>Lucro por dia (R$)</b>${chart(dl)}</div>
  ${ind}
  ${acc('g','💰 Ganhos',R(S.ganho),'pos',list('g'))}
@@ -171,14 +172,15 @@ function resumo(){const S=stats(),P=D.filter(inP),c=S.c,lucro=S.ganho-S.comb,tot
 function lancar(){
  const seg=[['g','💰 Ganho'],['a','⛽ Abastecer'],['d','🧾 Despesa']].map(([k,t])=>`<button class="${add===k?'on':''}" onclick="add='${k}';msg='';draw()">${t}</button>`).join('');
  let f='';
- if(add==='g')f=`<label>Origem</label><select id="s"><option>Aplicativos (99 / Uber)</option><option>Viagem Intermunicipal</option><option>Frete</option><option>Encomendas</option><option>Gorjeta</option><option>Outros</option></select>
+ if(add==='g')f=`<label>Origem</label><select id="s"><option>99</option><option>Uber</option><option>Viagem Intermunicipal</option><option>Frete</option><option>Encomendas</option><option>Gorjeta</option><option>Outros</option></select>
   <label>Valor recebido (R$)</label><input id="v" type="text" inputmode="numeric" placeholder="0,00" oninput="mk(this,2,',')" autocomplete="off">
   <label>Km rodados (opcional)</label><input id="k" type="text" inputmode="numeric" placeholder="0000.0" oninput="mk(this,1,'.')" autocomplete="off">
   <label>Consumo médio nesta corrida (km/L)</label><input id="kl" type="text" inputmode="numeric" placeholder="00.0" oninput="mk(this,1,'.')" autocomplete="off">
   <label>Gasto com combustível (calculado)</label><input id="gc" type="text" placeholder="0,00" readonly>
   <label>Lucro nesta corrida (calculado)</label><input id="lc" type="text" placeholder="0,00" readonly>
   <p class="hint" id="gh"></p>`;
- if(add==='a')f=`<label>Preço do litro (R$)</label><input id="p" type="text" inputmode="numeric" placeholder="0,00" oninput="mk(this,2,',')" autocomplete="off">
+ if(add==='a')f=`<label>Combustível</label><select id="cb"><option>Gasolina</option><option>Etanol</option></select>
+  <label>Preço do litro (R$)</label><input id="p" type="text" inputmode="numeric" placeholder="0,00" oninput="mk(this,2,',')" autocomplete="off">
   <label>Valor abastecido (R$)</label><input id="v" type="text" inputmode="numeric" placeholder="0,00" oninput="mk(this,2,',')" autocomplete="off">
   <label>Litros abastecidos (calculado)</label><input id="lt" type="text" placeholder="00.00" readonly>`;
  if(add==='d')f=`<label>Categoria</label><select id="c"><option>Manutenção</option><option>Lavagem</option><option>Pedágio</option><option>Alimentação</option><option>Parcela/Aluguel</option><option>Seguro/IPVA</option><option>Outro</option></select>
@@ -189,7 +191,7 @@ function lancar(){
 function addIt(){const e={ts:ed?ed.ts:Date.now(),t:add,d:document.getElementById('d').value||today(),v:num('v')};
  if(e.v<=0){return bad('Informe o valor.')}
  if(add==='g'){e.s=document.getElementById('s').value;e.k=num('k');e.kl=num('kl');const p=ed?priceAt(e.d):lastP();if(p>0&&e.k>0&&e.kl>0){e.pl=p;e.gc=+(e.k/e.kl*p).toFixed(2);e.lc=+(e.v-e.gc).toFixed(2)}}
- if(add==='a'){e.p=num('p');if(e.p<=0){return bad('Informe o preço do litro.')}}
+ if(add==='a'){e.p=num('p');e.cb=document.getElementById('cb').value;if(e.p<=0){return bad('Informe o preço do litro.')}}
  if(add==='d'){e.c=document.getElementById('c').value;e.n=document.getElementById('n').value}
  if(ed){e.id=ed.id;D=D.map(x=>x.id===e.id?e:x);col.doc(e.id).set(e).catch(x=>{err=fe(x);draw()});ed=null;tab='his';msg='';return draw()}
  const ref=col.doc();e.id=ref.id;D.push(e);ref.set(e).catch(x=>{err=fe(x);draw()});msg='✔ Salvo!';
