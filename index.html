@@ -63,6 +63,12 @@ input,select,textarea{-webkit-user-select:text;user-select:text;width:100%;paddi
 .so{display:flex;align-items:center;gap:6px;border:1px solid var(--bd);background:var(--card);color:var(--mut);border-radius:10px;padding:8px 10px;font:inherit;font-size:13px}
 .so svg{width:18px;height:18px}
 .so[hidden]{display:none}
+.oi{width:24px;height:24px;vertical-align:middle;margin-right:6px;border-radius:7px}
+.og{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.ot{display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 4px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);border-radius:12px;font:inherit;font-size:11px;line-height:1.15;text-align:center}
+.ot.on{border-color:var(--ac);box-shadow:0 0 0 2px var(--ac) inset}
+.ot .oi{width:38px;height:38px;margin:0}
+.hb .oi{width:16px;height:16px;margin-right:4px}
 </style></head><body><main>
 <header class="hd"><svg class="logo" viewBox="0 0 176 48" role="img" aria-label="Gestão Da Direção"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#14a86c"/><stop offset="1" stop-color="#0a6b42"/></linearGradient></defs>
 <rect width="48" height="48" rx="13" fill="url(#lg)"/><circle cx="24" cy="24" r="13" fill="none" stroke="#fff" stroke-width="3.4"/><path d="M24 11A13 13 0 0 1 37 24" fill="none" stroke="#ffb703" stroke-width="3.4" stroke-linecap="round"/>
@@ -122,7 +128,7 @@ const op={};
 const srt=a=>[...a].sort((a,b)=>b.d.localeCompare(a.d)||(b.ts||0)-(a.ts||0));
 const priceAt=d=>{const a=srt(D.filter(e=>e.t==='a')),b=a.find(x=>x.d<=d)||a[a.length-1];return b?b.p:0};
 function rowOf(e,x){let t,P=[fd(e.d)];
- if(e.t==='g'){t=`💰 ${esc(e.s)}`;if(e.vc)P.push(esc(e.vc));if(e.hm>0)P.push(e.hi+'–'+e.hf+' · '+fmtH(e.hm));if(e.k>0)P.push(e.k.toFixed(1)+' km');if(e.kl>0)P.push(e.kl.toFixed(1)+' km/L');
+ if(e.t==='g'){t=`${oi(e.s)}${esc(e.s)}`;if(e.vc)P.push(esc(e.vc));if(e.hm>0)P.push(e.hi+'–'+e.hf+' · '+fmtH(e.hm));if(e.k>0)P.push(e.k.toFixed(1)+' km');if(e.kl>0)P.push(e.kl.toFixed(1)+' km/L');
   let gc=e.gc,lc=e.lc;if(gc==null&&e.k>0&&e.kl>0){const pl=priceAt(e.d);if(pl>0){gc=e.k/e.kl*pl;lc=e.v-gc}}
   if(gc!=null)P.push('Combustível '+R(gc),`Lucro <b class="${lc>=0?'pos':'neg'}">${R(lc)}</b>`)}
  if(e.t==='a'){t=`⛽ Abastecimento${e.cb?' · '+e.cb:''}`;P.push((e.v/e.p).toFixed(2)+' L a '+R(e.p))}
@@ -131,6 +137,22 @@ function rowOf(e,x){let t,P=[fd(e.d)];
 function acc(k,t,tot,cls,body){return `<details class="acc" ${op[k]?'open':''} ontoggle="op['${k}']=this.open"><summary><span>${t}</span><b class="${cls}">${tot}</b></summary>${body}</details>`}
 const wd=d=>new Date(d+'T12:00').toLocaleDateString('pt-BR',{weekday:'short'}).replace('.','');
 const bad=m=>{msg=m;const x=document.getElementById('msg');if(x)x.textContent=m};
+const ORIG=['99','Uber','Entregas - Mercado Livre','Entregas - Shopee','Viagem Intermunicipal','Frete','Encomendas','Gorjeta','Outros'];
+const G=(c,p)=>`<g transform="translate(4 4)" fill="none" stroke="${c}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${p}</g>`;
+const OI={
+ '99':['#ffd400','<text x="16" y="22" font-size="16" font-weight="800" text-anchor="middle" fill="#111">99</text>'],
+ 'Uber':['#111',G('#fff','<path d="M3 13l1.8-4.6A2 2 0 0 1 6.7 7h10.6a2 2 0 0 1 1.9 1.4L21 13"/><rect x="2" y="13" width="20" height="5" rx="1.5"/><path d="M5 18v2.5M19 18v2.5"/><circle cx="7" cy="15.5" r=".6" fill="#fff"/><circle cx="17" cy="15.5" r=".6" fill="#fff"/>')],
+ 'Entregas - Mercado Livre':['#ffe600',G('#1b2b6b','<path d="M2 6h11v10H2z"/><path d="M13 9h4.5l3.5 3.5V16H13"/><circle cx="6.5" cy="17.5" r="2" fill="#ffe600"/><circle cx="17" cy="17.5" r="2" fill="#ffe600"/>')],
+ 'Entregas - Shopee':['#ee4d2d',G('#fff','<circle cx="5.5" cy="17" r="2.6"/><circle cx="18.5" cy="17" r="2.6"/><path d="M5.5 17h4l3-6h4l2 6"/><path d="M14 11l-1-3.5h-2.5"/><rect x="2" y="6" width="7" height="6" rx="1"/>')],
+ 'Viagem Intermunicipal':['#2b7fff',G('#fff','<path d="M2 21h20"/><path d="M4 21V10h6v11"/><path d="M10 21V4h7v17"/><path d="M17 21v-8h4v8"/><path d="M12.5 8h2M12.5 12h2M12.5 16h2M6.5 14h1"/>')],
+ 'Frete':['#7a4bd6',G('#fff','<circle cx="12" cy="7.5" r="2.7"/><path d="M7 20v-2.5a5 5 0 0 1 10 0V20"/><circle cx="4.5" cy="10.5" r="2"/><path d="M1.5 19.5V18a3.2 3.2 0 0 1 3.6-3.2"/><circle cx="19.5" cy="10.5" r="2"/><path d="M22.5 19.5V18a3.2 3.2 0 0 0-3.6-3.2"/>')],
+ 'Encomendas':['#b8742a',G('#fff','<rect x="3" y="14" width="8" height="7" rx="1"/><rect x="13" y="14" width="8" height="7" rx="1"/><rect x="8" y="6" width="8" height="8" rx="1"/><path d="M12 6v3M7 14v3M17 14v3"/>')],
+ 'Gorjeta':['#2e9e5b','<circle cx="16" cy="16" r="9" fill="none" stroke="#fff" stroke-width="1.8"/><text x="16" y="21.5" font-size="14" font-weight="800" text-anchor="middle" fill="#fff">$</text>'],
+ 'Outros':['#6b7280','<circle cx="9" cy="16" r="1.8" fill="#fff"/><circle cx="16" cy="16" r="1.8" fill="#fff"/><circle cx="23" cy="16" r="1.8" fill="#fff"/>']};
+const oi=n=>{const k=Object.keys(OI).find(x=>x.toLowerCase()===String(n).toLowerCase())||(String(n).startsWith('Aplicativos')?'Uber':'Outros'),[bg,gl]=OI[k];return `<svg class="oi" viewBox="0 0 32 32"><rect x=".5" y=".5" width="31" height="31" rx="9" fill="${bg}" stroke="#8886"/>${gl}</svg>`};
+function og(){const sel=ed&&ed.s?ed.s:'99',L=ORIG.includes(sel)?ORIG:[...ORIG,sel];
+ return `<input type="hidden" id="s" value="${esc(sel)}"><div class="og">${L.map(n=>`<button type="button" class="ot${n===sel?' on':''}" data-v="${esc(n)}" onclick="pick(this.dataset.v)">${oi(n)}<span>${esc(n)}</span></button>`).join('')}</div>`}
+function pick(v){document.getElementById('s').value=v;document.querySelectorAll('.ot').forEach(b=>b.classList.toggle('on',b.dataset.v===v))}
 const mins=(a,b)=>{if(!a||!b)return 0;const[x,y]=a.split(':').map(Number),[u,w]=b.split(':').map(Number);let d=u*60+w-(x*60+y);if(d<0)d+=1440;return d};
 const fmtH=m=>Math.floor(m/60)+'h'+String(Math.round(m%60)).padStart(2,'0');
 function ch(){const h=document.getElementById('hm'),m=mins(document.getElementById('hi').value,document.getElementById('hf').value);if(h)h.value=m>0?fmtH(m):''}
@@ -143,7 +165,7 @@ function chart(days){const a=days.slice(-14);if(!a.length)return '<p class="hint
  return `<div id="cs" style="overflow-x:auto"><svg viewBox="0 0 ${W} ${H+18}" width="${W>300?W:'100%'}"><line x1="0" x2="${W}" y1="${z}" y2="${z}" stroke="var(--bd)"/>${bars}</svg></div>`}
 function edit(id){const e=D.find(x=>String(x.id)===id);if(!e)return;ed=e;add=e.t;tab='add';armed=null;msg='';fl=true;draw();scrollTo(0,0)}
 function fill(){if(!ed||tab!=='add')return;const g=id=>document.getElementById(id),set=(id,v)=>{if(g(id)&&v!=null&&v!=='')g(id).value=v};
- ['s','c','cb','vc'].forEach(i=>{const o=g(i),v=ed[i];if(o&&v&&![...o.options].some(x=>x.value===v))o.add(new Option(v,v))});
+ ['c','cb','vc'].forEach(i=>{const o=g(i),v=ed[i];if(o&&v&&![...o.options].some(x=>x.value===v))o.add(new Option(v,v))});
  set('d',ed.d);set('v',m2(ed.v));set('p',ed.p?m2(ed.p):null);set('k',ed.k?ed.k.toFixed(1):null);set('kl',ed.kl?ed.kl.toFixed(1):null);set('s',ed.s);set('vc',ed.vc);set('hi',ed.hi);set('hf',ed.hf);set('cb',ed.cb);set('c',ed.c);set('n',ed.n)}
 function resumo(){const S=stats(),P=D.filter(inP),c=S.c,lucro=S.ganho-S.comb,total=lucro-S.desp;
  const seg=[['dia','Hoje'],['sem','Semana'],['mes','Mês'],['tudo','Tudo']].map(([k,t])=>`<button class="${per===k?'on':''}" onclick="per='${k}';pf=pt='';if(per==='mes')pm='';draw()">${t}</button>`).join('');
@@ -153,7 +175,7 @@ function resumo(){const S=stats(),P=D.filter(inP),c=S.c,lucro=S.ganho-S.comb,tot
  const hbars=a=>{const m=Math.max(...a.map(x=>Math.abs(x[1])),0.0001);return a.map(([l,v,t,c])=>`<div class="hb"><span>${l}</span><div class="tr"><i style="width:${Math.abs(v)/m*100}%;background:${c}"></i></div><b>${t}</b></div>`).join('')};
  const pk=S.km>0,gkm=pk?S.ganho/S.km:0,ckm=c&&S.pl?S.pl/c:0,lkm=pk?total/S.km:0;
  const perkm=pk?hbars([['Ganho/km',gkm,R(gkm),'var(--ac)'],['Combustível/km',ckm,R(ckm),'var(--bad)'],['Lucro/km',lkm,R(lkm),lkm>=0?'var(--lu)':'var(--bad)']]):'<p class="hint">Informe os km rodados nos ganhos para ver.</p>';
- const org=Object.keys(S.src).length?hbars(Object.entries(S.src).sort((a,b)=>b[1]-a[1]).map(([n,v])=>[esc(n),v,R(v),'var(--bl)'])):'<p class="hint">Nenhum ganho no período.</p>';
+ const org=Object.keys(S.src).length?hbars(Object.entries(S.src).sort((a,b)=>b[1]-a[1]).map(([n,v])=>[oi(n)+esc(n),v,R(v),'var(--bl)'])):'<p class="hint">Nenhum ganho no período.</p>';
  const vv={};P.filter(e=>e.t==='g'&&e.vc).forEach(e=>vv[e.vc]=(vv[e.vc]||0)+e.v);
  const veh=Object.keys(vv).length?`<p class="hint" style="margin:12px 0 2px">Ganhos por veículo</p>`+hbars(Object.entries(vv).sort((a,b)=>b[1]-a[1]).map(([n,v])=>[n,v,R(v),'var(--lu)'])):'';
  const gh=P.filter(e=>e.t==='g'&&e.hm>0),hmin=sum(gh,e=>e.hm);
@@ -169,7 +191,7 @@ function resumo(){const S=stats(),P=D.filter(inP),c=S.c,lucro=S.ganho-S.comb,tot
  <div class="card tot"><small class="hint">Lucro Líquido</small><div class="big ${total>=0?'pos':'neg'}">${R(total)}</div><div class="hint">${S.dias} dia(s) trabalhado(s)${S.dias?' · média '+R(total/S.dias)+'/dia':''}</div></div>
  <div class="grid"><div class="k"><small>💵 Receitas</small><b class="${lucro>=0?'bl':'neg'}">${R(lucro)}</b></div><div class="k"><small>🧾 Despesas</small><b class="neg">${R(S.desp)}</b></div>
  ${dk('🏆','Dia mais lucrativo',best)}${dk('📉','Dia de menor lucro',worst)}
- <div class="k"><small>🚕 Melhor origem</small><b>${so?esc(so[0]):'—'}</b><small>${so?R(so[1]):''}</small></div><div class="k"><small>⛽ Combustível gasto</small><b class="neg">${R(S.comb)}</b><small>${btx}</small></div></div>
+ <div class="k"><small>🚕 Melhor origem</small><b>${so?oi(so[0])+esc(so[0]):'—'}</b><small>${so?R(so[1]):''}</small></div><div class="k"><small>⛽ Combustível gasto</small><b class="neg">${R(S.comb)}</b><small>${btx}</small></div></div>
  <div class="card"><b>Lucro por dia (R$)</b>${chart(dl)}</div>
  ${ind}
  ${acc('g','💰 Ganhos',R(S.ganho),'pos',list('g'))}
@@ -178,7 +200,7 @@ function resumo(){const S=stats(),P=D.filter(inP),c=S.c,lucro=S.ganho-S.comb,tot
 function lancar(){
  const seg=[['g','💰 Ganho'],['a','⛽ Abastecer'],['d','🧾 Despesa']].map(([k,t])=>`<button class="${add===k?'on':''}" onclick="add='${k}';msg='';draw()">${t}</button>`).join('');
  let f='';
- if(add==='g')f=`<label>Origem</label><select id="s"><option>99</option><option>Uber</option><option>Entregas - Mercado Livre</option><option>Entregas - Shopee</option><option>Viagem Intermunicipal</option><option>Frete</option><option>Encomendas</option><option>Gorjeta</option><option>Outros</option></select>
+ if(add==='g')f=`<label>Origem</label>${og()}
   <label>Veículo</label><select id="vc"><option>Carro</option><option>Moto</option></select>
   <label>Valor recebido (R$)</label><input id="v" type="text" inputmode="numeric" placeholder="0,00" oninput="mk(this,2,',')" autocomplete="off">
   <div style="display:flex;gap:8px"><div style="flex:1"><label>Hora início</label><input id="hi" type="time" oninput="ch()"></div><div style="flex:1"><label>Hora fim</label><input id="hf" type="time" oninput="ch()"></div></div>
