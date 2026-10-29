@@ -104,14 +104,14 @@ const today=()=>iso(new Date());
 const fd=s=>s.split('-').reverse().slice(0,2).join('/');
 const esc=s=>String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const sum=(a,f)=>a.reduce((s,e)=>s+f(e),0);
-const mk=(el,d,sep)=>{let x=el.value.replace(/\D/g,'').replace(/^0+/,'');if(!x){el.value='';cl();return}x=x.padStart(d+1,'0');el.value=x.slice(0,-d)+sep+x.slice(-d);cl()};
+const mk=(el,d,sep)=>{const r=el.value.replace(/\D/g,''),del=typeof event!=='undefined'&&event&&event.inputType&&event.inputType.indexOf('delete')===0;let x=r.replace(/^0+/,'');if(!r||(!x&&del)){el.value='';cl();return}if(!x)x='0';x=x.padStart(d+1,'0');el.value=x.slice(0,-d)+sep+x.slice(-d);cl()};
 const cl=()=>{const l=document.getElementById('lt');if(l){const p=num('p'),v=num('v');l.value=p>0&&v>0?(v/p).toFixed(2):''}if(document.getElementById('gc'))cg();if(document.getElementById('hm'))ch()};
 const lastP=()=>{const a=D.filter(e=>e.t==='a').sort((x,y)=>y.d.localeCompare(x.d)||(y.ts||0)-(x.ts||0))[0];return a?a.p:0};
 const br=x=>x.toFixed(2).replace('.',',');
 function cg(){const gc=document.getElementById('gc'),lc=document.getElementById('lc'),h=document.getElementById('gh');
  const a=D.filter(e=>e.t==='a').sort((x,y)=>y.d.localeCompare(x.d)||(y.ts||0)-(x.ts||0))[0],p=a?a.p:0,v=num('v'),k=num('k'),kl=num('kl');
  h.textContent=p?'Usando o preço do último abastecimento: '+R(p)+'/L':'Lance um abastecimento para calcular o gasto.';
- if(p>0&&k>0&&kl>0){const c=k/kl*p;gc.value=br(c);lc.value=v>0?br(v-c):''}else{gc.value='';lc.value=''}}
+ if(p>0&&k>0&&kl>0){const c=k/kl*p;gc.value=br(c);lc.value=document.getElementById('v').value.trim()!==''?br(v-c):''}else{gc.value='';lc.value=''}}
 const num=id=>parseFloat(String(document.getElementById(id).value).replace(',','.'))||0;
 function start(){const n=new Date(),t=today();if(per==='dia')return t;if(per==='sem'){n.setDate(n.getDate()-((n.getDay()+6)%7));return iso(n)}if(per==='mes')return t.slice(0,7)+'-01';return '0000'}
 const rng=()=>{let a=pf||pt,b=pt||pf;if(a>b)[a,b]=[b,a];return[a,b]};
@@ -128,7 +128,7 @@ const op={};
 const srt=a=>[...a].sort((a,b)=>b.d.localeCompare(a.d)||(b.ts||0)-(a.ts||0));
 const priceAt=d=>{const a=srt(D.filter(e=>e.t==='a')),b=a.find(x=>x.d<=d)||a[a.length-1];return b?b.p:0};
 function rowOf(e,x){let t,P=[fd(e.d)];
- if(e.t==='g'){t=`${oi(e.s)}${esc(e.s)}`;if(e.vc)P.push(esc(e.vc));if(e.ps>0)P.push(e.ps+' passageiro'+(e.ps>1?'s':''));if(e.hm>0)P.push(e.hi+'–'+e.hf+' · '+fmtH(e.hm));if(e.k>0)P.push(e.k.toFixed(1)+' km');if(e.kl>0)P.push(e.kl.toFixed(1)+' km/L');
+ if(e.t==='g'){t=`${oi(e.s)}${esc(e.s)}${e.ob?' · '+esc(e.ob):''}`;if(e.vc)P.push(esc(e.vc));if(e.ps!=null)P.push(e.ps+' passageiro'+(e.ps===1?'':'s'));if(e.hm>0)P.push(e.hi+'–'+e.hf+' · '+fmtH(e.hm));if(e.k>0)P.push(e.k.toFixed(1)+' km');if(e.kl>0)P.push(e.kl.toFixed(1)+' km/L');
   let gc=e.gc,lc=e.lc;if(gc==null&&e.k>0&&e.kl>0){const pl=priceAt(e.d);if(pl>0){gc=e.k/e.kl*pl;lc=e.v-gc}}
   if(gc!=null)P.push('Combustível '+R(gc),`Lucro <b class="${lc>=0?'pos':'neg'}">${R(lc)}</b>`)}
  if(e.t==='a'){t=`⛽ Abastecimento${e.cb?' · '+e.cb:''}`;P.push((e.v/e.p).toFixed(2)+' L a '+R(e.p))}
@@ -152,27 +152,27 @@ const OI={
 const oi=n=>{const k=Object.keys(OI).find(x=>x.toLowerCase()===String(n).toLowerCase())||(String(n).startsWith('Aplicativos')?'Uber':'Outros'),[bg,gl]=OI[k];return `<svg class="oi" viewBox="0 0 32 32"><rect x=".5" y=".5" width="31" height="31" rx="9" fill="${bg}" stroke="#8886"/>${gl}</svg>`};
 function og(){const sel=ed&&ed.s?ed.s:'99',L=ORIG.includes(sel)?ORIG:[...ORIG,sel];
  return `<input type="hidden" id="s" value="${esc(sel)}"><div class="og">${L.map(n=>`<button type="button" class="ot${n===sel?' on':''}" data-v="${esc(n)}" onclick="pick(this.dataset.v)">${oi(n)}<span>${esc(n)}</span></button>`).join('')}</div>`}
-function pick(v){document.getElementById('s').value=v;const w=document.getElementById('psw');if(w)w.style.display=v==='Viagem Intermunicipal'?'block':'none';document.querySelectorAll('.ot').forEach(b=>b.classList.toggle('on',b.dataset.v===v))}
+function pick(v){document.getElementById('s').value=v;const w=document.getElementById('psw');if(w)w.style.display=v==='Viagem Intermunicipal'?'block':'none';const o=document.getElementById('obw');if(o)o.style.display=v==='Outros'?'block':'none';document.querySelectorAll('.ot').forEach(b=>b.classList.toggle('on',b.dataset.v===v))}
 const mins=(a,b)=>{if(!a||!b)return 0;const[x,y]=a.split(':').map(Number),[u,w]=b.split(':').map(Number);let d=u*60+w-(x*60+y);if(d<0)d+=1440;return d};
 const fmtH=m=>Math.floor(m/60)+'h'+String(Math.round(m%60)).padStart(2,'0');
 function ch(){const h=document.getElementById('hm'),m=mins(document.getElementById('hi').value,document.getElementById('hf').value);if(h)h.value=m>0?fmtH(m):''}
 const m2=x=>(+x).toFixed(2).replace('.',',');
-function daily(P){const m={};P.forEach(e=>{const x=m[e.d]||(m[e.d]={d:e.d,g:0,c:0,x:0});if(e.t==='g')x.g+=e.v;else if(e.t==='a')x.c+=e.v;else x.x+=e.v});return Object.values(m).map(x=>({...x,l:x.g-x.c-x.x})).sort((a,b)=>a.d.localeCompare(b.d))}
+function daily(P){const m={};P.forEach(e=>{const x=m[e.d]||(m[e.d]={d:e.d,g:0,c:0,x:0,n:0});if(e.t==='g'){x.g+=e.v;x.n++}else if(e.t==='a')x.c+=e.v;else x.x+=e.v});return Object.values(m).map(x=>({...x,l:x.g-x.c-x.x})).sort((a,b)=>a.d.localeCompare(b.d))}
 function chart(days){const a=days.slice(-14);if(!a.length)return '<p class="hint">Sem dados no período.</p>';
  const mx=Math.max(...a.map(x=>Math.abs(x.l)),1),bw=60,W=Math.max(300,bw*a.length),H=120,o=(W-bw*a.length)/2,z=H/2;
  const bars=a.map((x,i)=>{const h=Math.abs(x.l)/mx*(z-16),y=x.l>=0?z-h:z,cx=o+i*bw+bw/2,col=x.l>=0?'var(--ac)':'var(--bad)',ty=x.l>=0?y-4:y+Math.max(h,1)+11;
   return `<rect x="${o+i*bw+bw*.25}" y="${y}" width="${bw*.5}" height="${Math.max(h,1)}" rx="3" fill="${col}"/><text x="${cx}" y="${ty}" font-size="9" font-weight="700" text-anchor="middle" fill="${col}">${R(x.l)}</text><text x="${cx}" y="${H+13}" font-size="9" text-anchor="middle" fill="var(--mut)">${fd(x.d)}</text>`}).join('');
  return `<div id="cs" style="overflow-x:auto"><svg viewBox="0 0 ${W} ${H+18}" width="${W>300?W:'100%'}"><line x1="0" x2="${W}" y1="${z}" y2="${z}" stroke="var(--bd)"/>${bars}</svg></div>`}
 function draft(){const g=i=>document.getElementById(i).value,hi=g('hi')||new Date().toTimeString().slice(0,5),ref=col.doc(),e={ts:Date.now(),t:'r',d:g('d')||today(),s:g('s'),vc:g('vc'),hi};
- const n=e.s==='Viagem Intermunicipal'?parseInt(g('ps'))||0:0;if(n>0)e.ps=n;
+ if(e.s==='Viagem Intermunicipal'&&g('ps')!=='')e.ps=parseInt(g('ps'))||0;if(e.s==='Outros'&&g('ob').trim())e.ob=g('ob').trim();
  e.id=ref.id;D.push(e);ref.set(e).catch(x=>{err=fe(x);draw()});msg='⏳ Rascunho salvo: início às '+hi;draw()}
 function finish(id){const e=D.find(x=>String(x.id)===id);if(!e)return;ed=e;add='g';tab='add';armed=null;msg='';fl=true;draw();scrollTo(0,0)}
 function drafts(){const L=D.filter(e=>e.t==='r');if(!L.length)return '';const now=new Date().toTimeString().slice(0,5);
- return `<div class="card"><b>⏳ Ganhos em andamento</b>${srt(L).map(e=>{const m=e.d===today()?mins(e.hi,now):0;return `<div class="row"><div>${oi(e.s)}${esc(e.s)}<small>${fd(e.d)} · início ${e.hi}${m?' · há '+fmtH(m):''}${e.vc?' · '+esc(e.vc):''}${e.ps>0?' · '+e.ps+' passageiro'+(e.ps>1?'s':''):''}</small></div><div style="text-align:right"><button class="del" style="color:var(--ac);margin-right:14px" onclick="finish('${e.id}')">Concluir</button><button class="del" onclick="del('${e.id}')">${armed==e.id?'Confirmar?':'Descartar'}</button></div></div>`}).join('')}</div>`}
+ return `<div class="card"><b>⏳ Ganhos em andamento</b>${srt(L).map(e=>{const m=e.d===today()?mins(e.hi,now):0;return `<div class="row"><div>${oi(e.s)}${esc(e.s)}<small>${fd(e.d)} · início ${e.hi}${m?' · há '+fmtH(m):''}${e.vc?' · '+esc(e.vc):''}${e.ps!=null?' · '+e.ps+' passageiro'+(e.ps===1?'':'s'):''}${e.ob?' · '+esc(e.ob):''}</small></div><div style="text-align:right"><button class="del" style="color:var(--ac);margin-right:14px" onclick="finish('${e.id}')">Concluir</button><button class="del" onclick="del('${e.id}')">${armed==e.id?'Confirmar?':'Descartar'}</button></div></div>`}).join('')}</div>`}
 function edit(id){const e=D.find(x=>String(x.id)===id);if(!e)return;ed=e;add=e.t;tab='add';armed=null;msg='';fl=true;draw();scrollTo(0,0)}
 function fill(){if(!ed||tab!=='add')return;const g=id=>document.getElementById(id),set=(id,v)=>{if(g(id)&&v!=null&&v!=='')g(id).value=v};
  ['c','cb','vc'].forEach(i=>{const o=g(i),v=ed[i];if(o&&v&&![...o.options].some(x=>x.value===v))o.add(new Option(v,v))});
- set('d',ed.d);set('v',ed.v>0?m2(ed.v):null);set('p',ed.p?m2(ed.p):null);set('k',ed.k?ed.k.toFixed(1):null);set('kl',ed.kl?ed.kl.toFixed(1):null);set('s',ed.s);set('vc',ed.vc);set('ps',ed.ps);set('hi',ed.hi);set('hf',ed.hf);set('cb',ed.cb);set('c',ed.c);set('n',ed.n)}
+ set('d',ed.d);set('v',ed.v!=null?m2(ed.v):null);set('p',ed.p?m2(ed.p):null);set('k',ed.k?ed.k.toFixed(1):null);set('kl',ed.kl?ed.kl.toFixed(1):null);set('s',ed.s);set('vc',ed.vc);set('ps',ed.ps);set('ob',ed.ob);set('hi',ed.hi);set('hf',ed.hf);set('cb',ed.cb);set('c',ed.c);set('n',ed.n)}
 function resumo(){const S=stats(),P=D.filter(inP),c=S.c,lucro=S.ganho-S.comb,total=lucro-S.desp;
  const seg=[['dia','Hoje'],['sem','Semana'],['mes','Mês'],['tudo','Tudo']].map(([k,t])=>`<button class="${per===k?'on':''}" onclick="per='${k}';pf=pt='';if(per==='mes')pm='';draw()">${t}</button>`).join('');
  const k=(t,v)=>`<div class="k"><small>${t}</small><b>${v}</b></div>`;
@@ -184,11 +184,11 @@ function resumo(){const S=stats(),P=D.filter(inP),c=S.c,lucro=S.ganho-S.comb,tot
  const org=Object.keys(S.src).length?hbars(Object.entries(S.src).sort((a,b)=>b[1]-a[1]).map(([n,v])=>[oi(n)+esc(n),v,R(v),'var(--bl)'])):'<p class="hint">Nenhum ganho no período.</p>';
  const vv={};P.filter(e=>e.t==='g'&&e.vc).forEach(e=>vv[e.vc]=(vv[e.vc]||0)+e.v);
  const veh=Object.keys(vv).length?`<p class="hint" style="margin:12px 0 2px">Ganhos por veículo</p>`+hbars(Object.entries(vv).sort((a,b)=>b[1]-a[1]).map(([n,v])=>[n,v,R(v),'var(--lu)'])):'';
- const gh=P.filter(e=>e.t==='g'&&e.hm>0),hmin=sum(gh,e=>e.hm),pax=sum(P.filter(e=>e.t==='g'&&e.ps>0),e=>e.ps);
- const ind=`<div class="card"><b>Indicadores</b><p class="hint" style="margin:8px 0 2px">R$ por km rodado</p>${perkm}<p class="hint" style="margin:12px 0 2px">Ganhos por origem</p>${org}${veh}<div class="grid" style="margin-top:12px">${k('Lucro por dia trabalhado',S.dias?R(total/S.dias):'—')}${k('Margem',S.ganho>0?N(total/S.ganho*100)+'%':'—')}${k('Consumo médio',c?N(c)+' km/L':'—')}${k('Preço médio do litro',S.pl?R(S.pl):'—')}${k('Km informados',pk?N(S.km,0)+' km':'—')}${k('Horas trabalhadas',hmin?fmtH(hmin):'—')}${k('Ganho por hora',hmin?R(sum(gh,e=>e.v)/hmin*60):'—')}${k('Passageiros',pax?N(pax,0):'—')}</div></div>`;
+ const gh=P.filter(e=>e.t==='g'&&e.hm>0),hmin=sum(gh,e=>e.hm),pg=P.filter(e=>e.t==='g'&&e.ps!=null),pax=sum(pg,e=>e.ps);
+ const ind=`<div class="card"><b>Indicadores</b><p class="hint" style="margin:8px 0 2px">R$ por km rodado</p>${perkm}<p class="hint" style="margin:12px 0 2px">Ganhos por origem</p>${org}${veh}<div class="grid" style="margin-top:12px">${k('Lucro por dia trabalhado',S.dias?R(total/S.dias):'—')}${k('Margem',S.ganho>0?N(total/S.ganho*100)+'%':'—')}${k('Consumo médio',c?N(c)+' km/L':'—')}${k('Preço médio do litro',S.pl?R(S.pl):'—')}${k('Km informados',pk?N(S.km,0)+' km':'—')}${k('Horas trabalhadas',hmin?fmtH(hmin):'—')}${k('Ganho por hora',hmin?R(sum(gh,e=>e.v)/hmin*60):'—')}${k('Passageiros',pg.length?N(pax,0):'—')}</div></div>`;
  const nd=D.filter(e=>e.t==='r').length,cur=today().slice(0,7),dt=new Date(PM()+'-01T12:00'),mn=dt.toLocaleDateString('pt-BR',{month:'long'}).toUpperCase()+(dt.getFullYear()!==new Date().getFullYear()?' '+dt.getFullYear():'');
  const bt={};P.filter(e=>e.t==='a').forEach(e=>{const n=e.cb||'Não informado';bt[n]=(bt[n]||0)+e.v});const btx=Object.keys(bt).some(n=>n!=='Não informado')?Object.entries(bt).map(([n,v])=>n+' '+R(v)).join(' · '):'';
- const dl=daily(P),wk=dl.filter(x=>x.g>0),best=wk.length?wk.reduce((a,b)=>b.l>a.l?b:a):null,worst=wk.length>1?wk.reduce((a,b)=>b.l<a.l?b:a):null,so=Object.entries(S.src).sort((a,b)=>b[1]-a[1])[0];
+ const dl=daily(P),wk=dl.filter(x=>x.n>0),best=wk.length?wk.reduce((a,b)=>b.l>a.l?b:a):null,worst=wk.length>1?wk.reduce((a,b)=>b.l<a.l?b:a):null,so=Object.entries(S.src).sort((a,b)=>b[1]-a[1])[0];
  const dk=(ic,t,x)=>x?`<div class="k"><small>${ic} ${t}</small><b class="${x.l>=0?'pos':'neg'}">${R(x.l)}</b><small>${wd(x.d)} ${fd(x.d)}</small></div>`:`<div class="k"><small>${ic} ${t}</small><b>—</b></div>`;
  return `${nd?`<div class="card" style="padding:10px 14px;border-color:var(--lu)" onclick="tab='add';draw()">⏳ ${nd} ganho${nd>1?'s':''} em andamento · toque para concluir</div>`:''}<div style="display:flex;align-items:center;justify-content:space-between;margin:4px 0 8px"><button class="mn" onclick="mv(-1)">‹</button><b style="font-size:18px;letter-spacing:1px">${mn}</b><button class="mn" onclick="mv(1)" ${PM()>=cur?'disabled':''}>›</button></div>
  <div class="seg">${seg}</div>
@@ -208,6 +208,7 @@ function lancar(){
  let f='';
  if(add==='g')f=`<label>Origem</label>${og()}
   <div id="psw" style="display:${(ed?ed.s:'99')==='Viagem Intermunicipal'?'block':'none'}"><label>Número de passageiros</label><input id="ps" type="text" inputmode="numeric" placeholder="0" oninput="this.value=this.value.replace(/[^0-9]/g,'')"></div>
+  <div id="obw" style="display:${(ed?ed.s:'99')==='Outros'?'block':'none'}"><label>Observação (qual o tipo deste ganho?)</label><input id="ob" type="text" maxlength="60" placeholder="Ex.: venda, serviço extra..."></div>
   <label>Veículo</label><select id="vc"><option>Carro</option><option>Moto</option></select>
   <label>Valor recebido (R$)</label><input id="v" type="text" inputmode="numeric" placeholder="0,00" oninput="mk(this,2,',')" autocomplete="off">
   <div style="display:flex;gap:8px"><div style="flex:1"><label>Hora início</label><input id="hi" type="time" oninput="ch()"></div><div style="flex:1"><label>Hora fim</label><input id="hf" type="time" oninput="ch()"></div></div>
@@ -228,8 +229,8 @@ function lancar(){
  return `${ed?'':drafts()}${ed?'':`<div class="seg">${seg}</div>`}<div class="card">${ed?(ed.t==='r'?'<b>✅ Concluir ganho em andamento</b>':'<b>✏️ Editando lançamento</b>'):''}<label>Data</label><input id="d" type="date" value="${today()}">${f}
  <button class="go" onclick="addIt()">${ed?(ed.t==='r'?'Concluir ganho':'Salvar alterações'):'Salvar'}</button>${ed?`<button class="go" style="background:var(--card);color:var(--tx);border:1px solid var(--bd)" onclick="tab='${ed.t==='r'?'add':'his'}';ed=null;draw()">Cancelar</button>`:''}<p class="hint" id="msg">${msg}</p></div>`}
 function addIt(){const e={ts:ed?ed.ts:Date.now(),t:add,d:document.getElementById('d').value||today(),v:num('v')};
- if(e.v<=0){return bad('Informe o valor.')}
- if(add==='g'){e.s=document.getElementById('s').value;e.k=num('k');e.kl=num('kl');e.vc=document.getElementById('vc').value;if(e.s==='Viagem Intermunicipal'){const n=parseInt(document.getElementById('ps').value)||0;if(n>0)e.ps=n}{const hi=document.getElementById('hi').value,hf=document.getElementById('hf').value;if(hi&&hf){e.hi=hi;e.hf=hf;e.hm=mins(hi,hf)}}const p=ed?priceAt(e.d):lastP();if(p>0&&e.k>0&&e.kl>0){e.pl=p;e.gc=+(e.k/e.kl*p).toFixed(2);e.lc=+(e.v-e.gc).toFixed(2)}}
+ if(add==='g'?document.getElementById('v').value.trim()==='':e.v<=0){return bad(add==='g'?'Informe o valor (use 0,00 se não recebeu nada).':'Informe o valor.')}
+ if(add==='g'){e.s=document.getElementById('s').value;e.k=num('k');e.kl=num('kl');e.vc=document.getElementById('vc').value;if(e.s==='Viagem Intermunicipal'){const r=document.getElementById('ps').value;if(r!=='')e.ps=parseInt(r)||0}if(e.s==='Outros'){const o=document.getElementById('ob').value.trim();if(o)e.ob=o}{const hi=document.getElementById('hi').value,hf=document.getElementById('hf').value;if(hi&&hf){e.hi=hi;e.hf=hf;e.hm=mins(hi,hf)}}const p=ed?priceAt(e.d):lastP();if(p>0&&e.k>0&&e.kl>0){e.pl=p;e.gc=+(e.k/e.kl*p).toFixed(2);e.lc=+(e.v-e.gc).toFixed(2)}}
  if(add==='a'){e.p=num('p');e.cb=document.getElementById('cb').value;if(e.p<=0){return bad('Informe o preço do litro.')}}
  if(add==='d'){e.c=document.getElementById('c').value;e.n=document.getElementById('n').value}
  if(ed){e.id=ed.id;D=D.map(x=>x.id===e.id?e:x);col.doc(e.id).set(e).catch(x=>{err=fe(x);draw()});ed=null;tab='his';msg='';return draw()}
