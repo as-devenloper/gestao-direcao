@@ -127,13 +127,13 @@ function stats(){const P=D.filter(inP),g=P.filter(e=>e.t==='g'),a=P.filter(e=>e.
 const op={};
 const srt=a=>[...a].sort((a,b)=>b.d.localeCompare(a.d)||(b.ts||0)-(a.ts||0));
 const priceAt=d=>{const a=srt(D.filter(e=>e.t==='a')),b=a.find(x=>x.d<=d)||a[a.length-1];return b?b.p:0};
-function rowOf(e,x){let t,P=[fd(e.d)];
+function rowOf(e,x){let t,P=[fd(e.d)],neg=false;
  if(e.t==='g'){t=`${oi(e.s)}${esc(e.s)}${e.ob?' · '+esc(e.ob):''}`;if(e.vc)P.push(esc(e.vc));if(e.ps!=null)P.push(e.ps+' passageiro'+(e.ps===1?'':'s'));if(e.hm>0)P.push(e.hi+'–'+e.hf+' · '+fmtH(e.hm));if(e.k>0)P.push(e.k.toFixed(1)+' km');if(e.kl>0)P.push(e.kl.toFixed(1)+' km/L');
   let gc=e.gc,lc=e.lc;if(gc==null&&e.k>0&&e.kl>0){const pl=priceAt(e.d);if(pl>0){gc=e.k/e.kl*pl;lc=e.v-gc}}
-  if(gc!=null)P.push('Combustível '+R(gc),`Lucro <b class="${lc>=0?'pos':'neg'}">${R(lc)}</b>`)}
+  if(lc!=null&&lc<0)neg=true;if(gc!=null)P.push('Combustível '+R(gc),`Lucro <b class="${lc>=0?'pos':'neg'}">${R(lc)}</b>`)}
  if(e.t==='a'){t=`⛽ Abastecimento${e.cb?' · '+e.cb:''}`;P.push((e.v/e.p).toFixed(2)+' L a '+R(e.p))}
  if(e.t==='d'){t=`🧾 ${esc(e.c)}`;if(e.n)P.push(esc(e.n))}
- return `<div class="row"><div>${t}<small>${P.join(' · ')}</small></div><div style="text-align:right"><b class="${e.t==='g'?'pos':'neg'}">${e.t==='g'?'+':'−'}${R(e.v)}</b>${x?`<br><button class="del" style="color:var(--ac);margin-right:14px" onclick="edit('${e.id}')">Editar</button><button class="del" onclick="del('${e.id}')">${armed==e.id?'Confirmar?':'Excluir'}</button>`:''}</div></div>`}
+ return `<div class="row"><div>${t}<small>${P.join(' · ')}</small></div><div style="text-align:right"><b class="${e.t==='g'&&!neg?'pos':'neg'}">${e.t==='g'?'+':'−'}${R(e.v)}</b>${x?`<br><button class="del" style="color:var(--ac);margin-right:14px" onclick="edit('${e.id}')">Editar</button><button class="del" onclick="del('${e.id}')">${armed==e.id?'Confirmar?':'Excluir'}</button>`:''}</div></div>`}
 function acc(k,t,tot,cls,body){return `<details class="acc" ${op[k]?'open':''} ontoggle="op['${k}']=this.open"><summary><span>${t}</span><b class="${cls}">${tot}</b></summary>${body}</details>`}
 const wd=d=>new Date(d+'T12:00').toLocaleDateString('pt-BR',{weekday:'short'}).replace('.','');
 const bad=m=>{msg=m;const x=document.getElementById('msg');if(x)x.textContent=m};
